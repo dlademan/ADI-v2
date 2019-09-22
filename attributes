@@ -1,0 +1,32 @@
+Asset
+    zip_path: Path
+    zip_file_name: str
+    zip_file_list: list
+
+    product_name: str
+    size_raw: int
+
+    installed: bool
+    installed_time: datetime
+    imported_time: datetime
+    tags: list
+
+
+Asset
+    id: int
+    SKU: int
+
+    zip_path: text
+    zip_file_name: text
+    product_name: text
+
+    zip_size_raw: int
+    ext_size_raw: int
+
+file_paths
+    id: int from -> Asset
+    path: text
+
+tags
+    id: int from -> Asset
+    tag: text

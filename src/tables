@@ -1,0 +1,29 @@
+CREATE TABLE IF NOT EXISTS assets (
+    id integer PRIMARY KEY,
+    sku integer NOT NULL,
+    hash integer NOT NULL
+    zip_path text NOT NULL,
+    zip_file_name text NOT NULL,
+    product_name text NOT NULL,
+    zip_size_raw integer NOT NULL,
+    ext_size_raw integer NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+    id integer PRIMARY KEY,
+    tag text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS file_paths (
+    asset_id integer NOT NULL,
+    file_path text NOT NULL,
+    FOREIGN KEY (asset_id) REFERENCES assets (id)
+);
+
+CREATE TABLE IF NOT EXISTS asset_tags (
+    asset_id integer NOT NULL,
+    tag_id integer NOT NULL,
+    PRIMARY KEY(asset_id, tag_id),
+    FOREIGN KEY (asset_id) REFERENCES assets (id),
+    FOREIGN KEY (tag_id) REFERENCES tags (id)
+);
