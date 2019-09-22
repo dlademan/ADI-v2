@@ -1,3 +1,4 @@
+import logging
 from Asset import AssetLibrary
 from Config import ConfigHandler
 from Queue import QueueHandler
@@ -8,7 +9,7 @@ class DataHandler:
 
     def __init__(self):
 
-        self.config = ConfigHandler(self)
-        self.assets = AssetLibrary(self.config)
-        self.queue = QueueHandler(self.config.get_user_folder())
-        self.database = DatabaseHandler(self.config.get_user_folder())
+        self.config = ConfigHandler()
+        self.database = DatabaseHandler(self.config.user_folder_path)
+        self.assets = AssetLibrary()
+        self.queue = QueueHandler(self.config.user_folder_path)

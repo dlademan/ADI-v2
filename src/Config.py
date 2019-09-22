@@ -1,5 +1,6 @@
 import os
 import wx
+import logging
 
 from pathlib import Path
 from platform import system
@@ -8,13 +9,16 @@ from configobj import ConfigObj
 
 class ConfigHandler:
 
-    def __init__(self, debug=False):
-        user_folder_path: Path = self.get_user_folder()
+    def __init__(self, debug: bool = False):
+        self.user_folder_path: Path = self._get_user_folder()
+        if not self.user_folder_path.exists():
+            self.user_folder_path.mkdir(parents=True)
+        self._init_logger()
 
-        self.config_path = user_folder_path / 'debug.ini' if debug else user_folder_path / 'config.ini'
+        self.config_path = self.user_folder_path / 'debug.ini' if debug else self.user_folder_path / 'config.ini'
 
-        self.dimensions_path: Path = user_folder_path / 'dimensions.pkl'
-        self.backup_path: Path = user_folder_path / 'backup'
+        self.dimensions_path: Path = self.user_folder_path / 'dimensions.pkl'
+        self.backup_path: Path = self.user_folder_path / 'backup'
 
         if not self.config_path.exists(): self._create_config()
 
@@ -37,8 +41,8 @@ class ConfigHandler:
         self._config.filename = self.config_path
 
         self._config['Options'] = {}
-        self._config['Options']['archive'] = self.get_default_archive_path()
-        self._config['Options']['library'] = self.get_default_library_path()
+        self._config['Options']['archive'] = self._get_default_archive_path()
+        self._config['Options']['library'] = self._get_default_library_path()
         self._config['Options']['clear_queue'] = True
         self._config['Options']['expand'] = True
         self._config['Options']['close_dialog'] = False
@@ -54,8 +58,8 @@ class ConfigHandler:
 
     def _save_config(self):
         self._config['Options'] = {}
-        self._config['Options']['archive'] = self.get_default_archive_path()
-        self._config['Options']['library'] = self.get_default_library_path()
+        self._config['Options']['archive'] = self._get_default_archive_path()
+        self._config['Options']['library'] = self._get_default_library_path()
         self._config['Options']['clear_queue'] = True
         self._config['Options']['expand'] = True
         self._config['Options']['close_dialog'] = False
@@ -69,9 +73,27 @@ class ConfigHandler:
 
         self._config.write()
 
-    #todo make these better?
+    def _init_logger(self):
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+        fh = logging.FileHandler(self.user_folder_path / 'log.txt')
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+        logger.info('Logger started')
+
+    # todo make these better?
     @staticmethod
-    def get_user_folder():
+    def _get_user_folder():
         if system() == 'Windows':
             return Path(os.getenv('APPDATA') + '/ADI/')
         elif system() == 'Darwin':  # mac
@@ -80,7 +102,7 @@ class ConfigHandler:
             return Path(os.path.expanduser('~/.ADI/'))
 
     @staticmethod
-    def get_default_library_path():
+    def _get_default_library_path():
         if system() == 'Windows':
             return Path('C:/Users/Public/Documents/My DAZ 3D Library/')
         elif system() == 'Darwin':  # mac
@@ -89,7 +111,7 @@ class ConfigHandler:
             return Path(os.path.expanduser('~/Daz3D Library/'))
 
     @staticmethod
-    def get_default_archive_path():
+    def _get_default_archive_path():
         if system() == 'Windows':
             return Path('C:/Users/Public/Documents/DAZ 3D/InstallManager/Downloads')
         elif system() == 'Darwin':  # mac

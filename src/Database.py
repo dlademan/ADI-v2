@@ -1,19 +1,17 @@
+import logging
 import sqlite3
 from sqlite3 import Error as sqlError
 from pathlib import Path
-from Config import ConfigHandler
 
 
 class DatabaseHandler:
 
-    def __init__(self, user_folder: Path, file_name='assets.db'):
+    def __init__(self, user_folder: Path, file_name: str = 'assets.db'):
         self.file_name: str = file_name
         self.path: Path = user_folder / file_name
 
         self.conn = self._create_connection()
         self._create_tables()
-
-        self._create_asset((0, 'path/to/file/', 'file_name.ext', 'product_name', 100, 200))
 
         self.conn.commit()
         self.conn.close()
@@ -23,10 +21,10 @@ class DatabaseHandler:
         conn = None
         try:
             conn = sqlite3.connect(str(self.path))
-            print("Connection created to " + self.file_name)
-            print("SQLite version: " + sqlite3.version)
+            logging.info("Connection created to " + self.file_name)
+            logging.info("SQLite version: " + sqlite3.version)
         except sqlError as e:
-            print(e)
+            logging.critical(e)
 
         return conn
 
@@ -35,8 +33,8 @@ class DatabaseHandler:
             cursor = self.conn.cursor()
             cursor.execute(sql_table)
         except sqlError as e:
-            print(table_name + ": ")
-            print(e)
+            logging.info(table_name + ": ")
+            logging.info(e)
 
     def _create_tables(self):
         tables = []
@@ -54,9 +52,9 @@ class DatabaseHandler:
             for i, table in enumerate(tables):
                 self._create_table("Table " + str(i), table)
         else:
-            print("Error! Cannot create the database connection.")
+            logging.critical("Error! Cannot create the database connection.")
 
-    def _create_asset(self, asset: tuple):
+    def create_asset(self, asset: tuple):
 
         sql = ''' 
         INSERT INTO assets(sku,zip_path,zip_file_name,product_name,zip_size_raw,ext_size_raw) 
@@ -64,9 +62,8 @@ class DatabaseHandler:
         '''
         cursor = self.conn.cursor()
         try:
-            print('Inserting ' + asset[3] + ' into assets table')
+            logging.info('Inserting ' + asset[3] + ' into assets table')
             cursor.execute(sql, asset)
         except sqlError as e:
-            print(e)
-        print(cursor.lastrowid)
+            logging.critical(e)
         return cursor.lastrowid

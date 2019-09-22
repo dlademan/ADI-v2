@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS assets (
     id integer PRIMARY KEY,
     sku integer NOT NULL,
-    hash integer NOT NULL
+    hash integer NOT NULL,
     zip_path text NOT NULL,
     zip_file_name text NOT NULL,
     product_name text NOT NULL,
