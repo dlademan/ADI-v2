@@ -1,11 +1,15 @@
 from pathlib import Path
-from Config import ConfigHandler
 
 
-class AssetLibrary:
+class Asset:
 
-    def __init__(self, sort_method: str = 'name', sort_descending: bool = False):
+    def __init__(self, idn: int, sku: int, product_name: str,
+                 path: Path, filename: str, zip_size: int, installed: bool):
 
-        self.sort_method: str = sort_method
-        self.sort_descending: bool = sort_descending
-
+        self.idn = idn
+        self.sku = sku
+        self.product_name = product_name
+        self.path = path
+        self.filename = filename
+        self.zip_size = zip_size
+        self.installed = installed

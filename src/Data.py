@@ -1,15 +1,18 @@
 import logging
-from Asset import AssetLibrary
 from Config import ConfigHandler
-from Queue import QueueHandler
+from QueueHandler import QueueHandler
 from Database import DatabaseHandler
 
 
 class DataHandler:
 
-    def __init__(self):
+    def __init__(self, debug):
 
-        self.config = ConfigHandler()
-        self.database = DatabaseHandler(self.config.user_folder_path)
-        self.assets = AssetLibrary()
-        self.queue = QueueHandler(self.config.user_folder_path)
+        self.config = ConfigHandler(debug)
+        self.database = DatabaseHandler()
+        self.queue = QueueHandler()
+
+    def close(self):
+        self.config.save_config()
+        self.database.close()
+

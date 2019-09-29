@@ -2,44 +2,48 @@ import logging
 import sqlite3
 from sqlite3 import Error as sqlError
 from pathlib import Path
+from zipfile import ZipFile, ZipInfo
+
+from Helpers import FileHelpers, FolderHelpers
+from Asset import Asset
 
 
 class DatabaseHandler:
 
-    def __init__(self, user_folder: Path, file_name: str = 'assets.db'):
-        self.file_name: str = file_name
-        self.path: Path = user_folder / file_name
+    def __init__(self, filename: str = 'assets.db'):
+        self.filename: str = filename
+        self.path: Path = FolderHelpers.get_user_folder() / filename
 
-        self.conn = self._create_connection()
-        self._create_tables()
+        self.connection = self._init_connection()
+        self._init_tables()
 
-        self.conn.commit()
-        self.conn.close()
+        if self.connection is not None:
+            self.connection.commit()
 
-    def _create_connection(self):
+    def _init_connection(self):
 
-        conn = None
+        connection = None
         try:
-            conn = sqlite3.connect(str(self.path))
-            logging.info("Connection created to " + self.file_name)
-            logging.info("SQLite version: " + sqlite3.version)
+            connection = sqlite3.connect(str(self.path))
+            logging.info("Connection created to " + self.filename)
+            logging.debug("SQLite version: " + sqlite3.version)
         except sqlError as e:
             logging.critical(e)
 
-        return conn
+        return connection
 
-    def _create_table(self, table_name, sql_table):
+    def _init_table(self, table_name, sql_table):
         try:
-            cursor = self.conn.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(sql_table)
         except sqlError as e:
-            logging.info(table_name + ": ")
-            logging.info(e)
+            logging.critical(table_name + ": ")
+            logging.critical(e)
 
-    def _create_tables(self):
+    def _init_tables(self):
         tables = []
 
-        with open('tables', 'r') as tables_file:
+        with open('src/tables', 'r') as tables_file:
             for line in tables_file:
                 if line[:12] == 'CREATE TABLE':
                     tables.append('')
@@ -48,22 +52,195 @@ class DatabaseHandler:
                 elif line == '\n': continue
                 else: tables[-1] += line
 
-        if self.conn is not None:
+        if self.connection is not None:
             for i, table in enumerate(tables):
-                self._create_table("Table " + str(i), table)
+                self._init_table("Table " + str(i), table)
         else:
             logging.critical("Error! Cannot create the database connection.")
 
-    def create_asset(self, asset: tuple):
+    def create_asset(self, path: Path):
+
+        if path.suffix != '.zip':
+            logging.critical('Path provided does not point to a zip file')
+            return None
+
+        found, asset = self.find_asset_by_zip(path)
+        if found: return asset
+
+        logging.debug('Creating asset from: ' + path.name)
+
+        sku = FileHelpers.get_sku(path)
+        product_name = FileHelpers.get_product_name(path)
+        path_str = str(path.parent)
+        filename = path.name
+        zip_size = FileHelpers.get_file_size(path)
+
+        values = (sku, product_name, path_str, filename, zip_size, False)
 
         sql = ''' 
-        INSERT INTO assets(sku,zip_path,zip_file_name,product_name,zip_size_raw,ext_size_raw) 
+        INSERT INTO assets(sku,product_name,path,filename,zip_size,installed) 
         VALUES(?,?,?,?,?,?)
         '''
-        cursor = self.conn.cursor()
+
+        cursor = self.connection.cursor()
         try:
-            logging.info('Inserting ' + asset[3] + ' into assets table')
-            cursor.execute(sql, asset)
+            logging.debug('Inserting ' + values[3] + ' into assets table')
+            cursor.execute(sql, values)
+            self.connection.commit()
         except sqlError as e:
             logging.critical(e)
-        return cursor.lastrowid
+
+        return Asset(cursor.lastrowid, sku, product_name, path, filename, zip_size, False)
+
+    def find_asset_by_zip(self, path: Path):
+        logging.debug('Trying to find asset in database from: ' + path.name)
+
+        if path.suffix != '.zip':
+            logging.critical('Path provided does not point to a zip file,')
+            return False, None
+
+        # todo add select by date_created
+        path_size = FileHelpers.get_file_size(path)
+        success, asset = self.select_asset_by_size_and_filename(path_size, path.name)
+
+        if success:
+            logging.debug('Found: ' + path.name)
+            return True, asset
+        else:
+            logging.debug('Not Found: ' + path.name)
+            return False, None
+
+    def select_asset_by_size(self, size: int):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE zip_size=?', (size,))
+        rows = cursor.fetchall()
+
+        if len(rows) > 0:
+            return True, rows
+        else:
+            return False, None
+
+    def select_asset_by_filename(self, name: str):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE filename=?', (name,))
+        rows = cursor.fetchall()
+
+        if len(rows) > 0:
+            return True, rows
+        else:
+            return False, None
+
+    def select_asset_by_size_and_filename(self, size: int, name: str):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE zip_size=? AND filename=?', (size, name))
+        result = cursor.fetchone()
+
+        if result is None:
+            success = False
+            asset = result
+        else:
+            success = True
+            asset = Asset(*result)
+
+        return success, asset
+
+    def create_folder(self, path: Path, source=False):
+
+        rows = self.select_folder_by_path(path)
+        if len(rows) == 1:
+            return rows[0]
+        elif len(rows) == 0:
+            logging.debug('No folders found matching path: ' + str(path))
+            logging.debug('Creating folder in database')
+        elif len(rows) > 1:
+            logging.critical('Multiple folders found, return empty tuple')
+            return ()
+
+        sql = ''' 
+        INSERT INTO folders(path,title,file_count,size_raw,source) 
+        VALUES(?,?,?,?,?)
+        '''
+
+        path_str = str(path)
+        title = path.name
+        file_count = FolderHelpers.get_zip_count(path)
+        size_raw = FolderHelpers.get_folder_size(path)
+
+        folder = (path_str, title, file_count, size_raw, source)
+
+        cursor = self.connection.cursor()
+
+        try:
+            logging.debug('Inserting \'' + path.name + '\' into folders table')
+            cursor.execute(sql, folder)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
+
+        return (cursor.lastrowid, *folder)
+
+    def select_folder_by_path(self, path: Path):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM folders WHERE path=?', (str(path),))
+        rows = cursor.fetchall()
+        return rows
+
+    def select_folder_by_id(self, folder_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM folders WHERE id=?', (folder_id,))
+        row = cursor.fetchone()
+        return row
+
+    def select_all_source_folders(self):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM folders WHERE source=?', (True,))
+        rows = cursor.fetchall()
+        return rows
+
+    def create_all_file_paths(self, asset_ids: list):
+        for asset_id in asset_ids:
+            self.create_file_paths(asset_id)
+
+    def create_file_paths(self, asset_id: int):
+        results = self.select_file_paths_by_id(asset_id)
+
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE id=?', (asset_id,))
+        asset = cursor.fetchone()
+
+        if asset is None:
+            logging.warning('No asset found with id: ' + str(asset_id))
+            return
+        else:
+            asset = Asset(*asset)
+
+        asset_path = Path(asset.path) / Path(asset.filename)
+
+        with ZipFile(asset_path) as asset_zip_file:
+            info_list = asset_zip_file.infolist()
+
+        file_paths = []
+        for info in info_list:
+            if not info.is_dir():
+                file_path = (asset_id, info.filename)
+                file_paths.append(file_path)
+
+        if len(results) == len(file_paths): return
+
+        try:
+            logging.debug('Creating file_paths for: ' + asset_path.name)
+            cursor = self.connection.cursor()
+            cursor.executemany('INSERT INTO file_paths VALUES(?,?);', file_paths)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
+
+    def select_file_paths_by_id(self, asset_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM file_paths WHERE asset_id=?', (asset_id,))
+        results = cursor.fetchall()
+        return results
+
+    def close(self):
+        logging.info('Closing connection to database')
+        self.connection.close()

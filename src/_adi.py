@@ -6,11 +6,13 @@ class ADI(wx.App):
     """ADI application class"""
 
     def OnInit(self):
-        frame = MainFrame(None, -1, "Alternative Daz Importer")
+        # todo add check for debug in arguments
+        debug = False
+        frame = MainFrame(None, -1, "Alternative Daz Importer", debug)
 
         return True
 
 
 if __name__ == '__main__':
-    app = ADI(False)
+    app = ADI()
     app.MainLoop()

@@ -1,19 +1,20 @@
-import os
 import wx
 import logging
-
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from platform import system
 from configobj import ConfigObj
+from Helpers import FolderHelpers
 
 
 class ConfigHandler:
 
     def __init__(self, debug: bool = False):
-        self.user_folder_path: Path = self._get_user_folder()
+        self.user_folder_path: Path = FolderHelpers.get_user_folder()
+
         if not self.user_folder_path.exists():
             self.user_folder_path.mkdir(parents=True)
-        self._init_logger()
+
+        self._init_logger(debug)
 
         self.config_path = self.user_folder_path / 'debug.ini' if debug else self.user_folder_path / 'config.ini'
 
@@ -24,6 +25,8 @@ class ConfigHandler:
 
         self._config = ConfigObj(str(self.config_path))
 
+        # load Options
+        # todo allow multiple install paths and multiple archive paths
         self.archive: Path = Path(self._config['Options']['archive'])
         self.library: Path = Path(self._config['Options']['library'])
         self.clear_queue: bool = bool(self._config['Options']['clear_queue'])
@@ -31,6 +34,7 @@ class ConfigHandler:
         self.close_dialog: bool = bool(self._config['Options']['close_dialog'])
         self.detect: bool = bool(self._config['Options']['detect'])
 
+        # load Dimensions
         self.win_size = tuple(self._config['Dimensions']['win_size'])
         self.win_pos = tuple(self._config['Dimensions']['win_pos'])
         self.first = bool(self._config['Dimensions']['first'])
@@ -41,8 +45,8 @@ class ConfigHandler:
         self._config.filename = self.config_path
 
         self._config['Options'] = {}
-        self._config['Options']['archive'] = self._get_default_archive_path()
-        self._config['Options']['library'] = self._get_default_library_path()
+        self._config['Options']['archive'] = FolderHelpers.get_default_archive_path()
+        self._config['Options']['library'] = FolderHelpers.get_default_library_path()
         self._config['Options']['clear_queue'] = True
         self._config['Options']['expand'] = True
         self._config['Options']['close_dialog'] = False
@@ -54,67 +58,54 @@ class ConfigHandler:
         self._config['Dimensions']['first'] = True
         self._config['Dimensions']['version'] = 'temp'
 
+        logging.info('Creating ' + self.config_path.name + ' in ' + str(self.user_folder_path))
         self._config.write()
 
-    def _save_config(self):
+    def save_config(self):
         self._config['Options'] = {}
-        self._config['Options']['archive'] = self._get_default_archive_path()
-        self._config['Options']['library'] = self._get_default_library_path()
-        self._config['Options']['clear_queue'] = True
-        self._config['Options']['expand'] = True
-        self._config['Options']['close_dialog'] = False
-        self._config['Options']['detect'] = False
+        self._config['Options']['archive'] = self.archive
+        self._config['Options']['library'] = self.library
+        self._config['Options']['clear_queue'] = self.clear_queue
+        self._config['Options']['expand'] = self.expand
+        self._config['Options']['close_dialog'] = self.close_dialog
+        self._config['Options']['detect'] = self.detect
 
         self._config['Dimensions'] = {}
         self._config['Dimensions']['win_size'] = (1300, 800)
         self._config['Dimensions']['win_pos'] = wx.DefaultPosition.Get()
-        self._config['Dimensions']['first'] = True
-        self._config['Dimensions']['version'] = 'temp'
+        self._config['Dimensions']['first'] = self.first
+        self._config['Dimensions']['version'] = self.version
 
+        logging.info('Saving config to: ' + str(self.config_path.name))
         self._config.write()
 
-    def _init_logger(self):
+    # todo check for size of file and create new log file when above 1mb
+    def _init_logger(self, debug):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-        fh = logging.FileHandler(self.user_folder_path / 'log.txt')
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
+        debug_handler = RotatingFileHandler(self.user_folder_path / 'log_debug.txt',
+                                            mode='a', maxBytes=2*1024*1024,
+                                            backupCount=1, encoding=None, delay=0)
 
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
+        debug_handler.setLevel(logging.DEBUG)
+        debug_handler.setFormatter(formatter)
+        logger.addHandler(debug_handler)
 
-        logger.info('Logger started')
+        info_handler = RotatingFileHandler(self.user_folder_path / 'log.txt',
+                                           mode='a', maxBytes=2 * 1024 * 1024,
+                                           backupCount=1, encoding=None, delay=0)
 
-    # todo make these better?
-    @staticmethod
-    def _get_user_folder():
-        if system() == 'Windows':
-            return Path(os.getenv('APPDATA') + '/ADI/')
-        elif system() == 'Darwin':  # mac
-            return Path(os.path.expanduser('~/Library/Application Support/ADI/'))
-        else:  # linux
-            return Path(os.path.expanduser('~/.ADI/'))
+        info_handler.setLevel(logging.INFO)
+        info_handler.setFormatter(formatter)
+        logger.addHandler(info_handler)
 
-    @staticmethod
-    def _get_default_library_path():
-        if system() == 'Windows':
-            return Path('C:/Users/Public/Documents/My DAZ 3D Library/')
-        elif system() == 'Darwin':  # mac
-            return Path(os.path.expanduser('~/Studio3D/DazStudio/Content/'))
-        else:  # linux
-            return Path(os.path.expanduser('~/Daz3D Library/'))
+        level = logging.DEBUG if debug else logging.INFO
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
-    @staticmethod
-    def _get_default_archive_path():
-        if system() == 'Windows':
-            return Path('C:/Users/Public/Documents/DAZ 3D/InstallManager/Downloads')
-        elif system() == 'Darwin':  # mac
-            return Path(os.path.expanduser('~/Studio3D/DazStudio/InstallManager/Download/'))
-        else:  # linux
-            return Path(os.path.expanduser('~/Daz3D Zips/'))
+        logger.info('Logger initialized')

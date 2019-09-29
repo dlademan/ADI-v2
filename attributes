@@ -30,3 +30,9 @@ file_paths
 tags
     id: int from -> Asset
     tag: text
+
+folder
+    id: int
+    path: text
+    assets_inside: int
+    size_raw: int
