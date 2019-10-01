@@ -1,4 +1,4 @@
-from src.MainFrame import MainFrame
+from MainFrame import MainFrame
 import wx.adv
 
 
