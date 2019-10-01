@@ -6,9 +6,9 @@ from Database import DatabaseHandler
 
 class DataHandler:
 
-    def __init__(self, debug):
+    def __init__(self):
 
-        self.config = ConfigHandler(debug)
+        self.config = ConfigHandler()
         self.database = DatabaseHandler()
         self.queue = QueueHandler()
 

@@ -4,7 +4,7 @@ import hashlib
 import logging
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 from platform import system
 
 
@@ -48,8 +48,9 @@ class FileHelpers:
 
         try:
             zf = ZipFile(path, 'r')
-        except:
-            logging.error("Error occurred while opening zip file: " + str(path.name))
+        except BadZipFile as e:
+            logging.error('Error occurred while opening zip file: ' + str(path.name))
+            logging.error(e)
             return product_name + " is an invalid zip"
 
         if 'Supplement.dsx' in zf.namelist():

@@ -30,14 +30,14 @@ class TestFolderTreeFrame(wx.Frame):
         self.chooser = None
         self.tree = None
 
-        self.data = DataHandler('-d' in sys.argv)
-        logging.info('---------------- TestFolderTree Started')
+        self.data = DataHandler()
 
         self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), True)
         self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), True)
 
         self._create_body()
         self.Show()
+        logging.info('---------------- TestFolderTree Shown')
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -73,7 +73,7 @@ class TestFolderTreeFrame(wx.Frame):
         archive_box = wx.BoxSizer()
         archive_box.Add(button_refresh, 0, wx.EXPAND | wx.ALL)
         archive_box.Add(self.chooser, 1, wx.EXPAND | wx.ALL)
-        archive_box.Add(0, 0, 1)
+        archive_box.Add(0, 0, 2)
 
         self.count_label = wx.StaticText(self.library_panel, label='')
         self.size_label = wx.StaticText(self.library_panel, label='')
@@ -101,10 +101,8 @@ class TestFolderTreeFrame(wx.Frame):
         self._update_source_details()
 
     def _update_source_details(self):
-        source = self._get_selected_source_path()
-        source_zip_count = FolderHelpers.get_zip_count(source)
-        source_folder_size = FolderHelpers.get_folder_size(source)
-        source_folder_size = FileHelpers.format_bytes(source_folder_size)
+        source_zip_count = self.tree.zip_count
+        source_folder_size = FileHelpers.format_bytes(self.tree.size)
 
         zips_text = 'Zips: ' + str(source_zip_count)
         size_text = 'Size: ' + str(source_folder_size)

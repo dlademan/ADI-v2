@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from src.Database import DatabaseHandler
+from Database import DatabaseHandler
 
 
 class TestDatabase(unittest.TestCase):

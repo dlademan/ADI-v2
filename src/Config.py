@@ -1,5 +1,6 @@
 import wx
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from configobj import ConfigObj
@@ -8,15 +9,16 @@ from Helpers import FolderHelpers
 
 class ConfigHandler:
 
-    def __init__(self, debug: bool = False):
+    def __init__(self):
         self.user_folder_path: Path = FolderHelpers.get_user_folder()
+        self.debug = True if '-d' in sys.argv else False
 
         if not self.user_folder_path.exists():
             self.user_folder_path.mkdir(parents=True)
 
-        self._init_logger(debug)
+        self._init_logger()
 
-        self.config_path = self.user_folder_path / 'debug.ini' if debug else self.user_folder_path / 'config.ini'
+        self.config_path = self.user_folder_path / 'debug.ini' if self.debug else self.user_folder_path / 'config.ini'
 
         self.dimensions_path: Path = self.user_folder_path / 'dimensions.pkl'
         self.backup_path: Path = self.user_folder_path / 'backup'
@@ -80,7 +82,7 @@ class ConfigHandler:
         self._config.write()
 
     # todo check for size of file and create new log file when above 1mb
-    def _init_logger(self, debug):
+    def _init_logger(self):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
@@ -102,7 +104,7 @@ class ConfigHandler:
         info_handler.setFormatter(formatter)
         logger.addHandler(info_handler)
 
-        level = logging.DEBUG if debug else logging.INFO
+        level = logging.DEBUG if self.debug else logging.INFO
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)

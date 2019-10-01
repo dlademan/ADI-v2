@@ -2,7 +2,7 @@ import logging
 import sqlite3
 from sqlite3 import Error as sqlError
 from pathlib import Path
-from zipfile import ZipFile, ZipInfo
+from zipfile import ZipFile, ZipInfo, BadZipFile
 
 from Helpers import FileHelpers, FolderHelpers
 from Asset import Asset
@@ -43,7 +43,7 @@ class DatabaseHandler:
     def _init_tables(self):
         tables = []
 
-        with open('src/tables', 'r') as tables_file:
+        with open(r'src\tables', 'r') as tables_file:
             for line in tables_file:
                 if line[:12] == 'CREATE TABLE':
                     tables.append('')
@@ -109,6 +109,16 @@ class DatabaseHandler:
         else:
             logging.debug('Not Found: ' + path.name)
             return False, None
+
+    def select_all_assets(self):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets')
+        rows = cursor.fetchall()
+        assets = []
+        for row in rows:
+            assets.append(Asset(*row))
+
+        return assets
 
     def select_asset_by_size(self, size: int):
         cursor = self.connection.cursor()
@@ -216,8 +226,14 @@ class DatabaseHandler:
 
         asset_path = Path(asset.path) / Path(asset.filename)
 
-        with ZipFile(asset_path) as asset_zip_file:
-            info_list = asset_zip_file.infolist()
+        try:
+            with ZipFile(asset_path) as asset_zip_file:
+                info_list = asset_zip_file.infolist()
+        except BadZipFile as e:
+            logging.error('Error occurred while opening zip file: ' + str(asset_path.name))
+            logging.error(e)
+            logging.info('File paths not created for: ' + str(asset_path.name))
+            return
 
         file_paths = []
         for info in info_list:

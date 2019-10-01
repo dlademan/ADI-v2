@@ -7,8 +7,7 @@ class ADI(wx.App):
 
     def OnInit(self):
         # todo add check for debug in arguments
-        debug = False
-        frame = MainFrame(None, -1, "Alternative Daz Importer", debug)
+        frame = MainFrame(None, -1, "Alternative Daz Importer")
 
         return True
 
