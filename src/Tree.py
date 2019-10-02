@@ -26,8 +26,10 @@ class FolderTree(wx.TreeCtrl):
         self.make(root_path)
 
     def make(self, root_path: Path):
-
         self.DeleteAllItems()
+        self.zip_count = 0
+        self.size = 0
+
         logging.info("Making tree with: " + str(root_path))
 
         if not root_path.is_dir():

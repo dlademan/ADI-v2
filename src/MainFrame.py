@@ -119,7 +119,7 @@ class MainFrame(wx.Frame):
         self._enable_frame()
 
     def on_source_change(self, event=None):
-        pass
+        self.on_refresh_button_press()
 
     def on_close(self, event=None):
         position = self.GetPosition().Get()
