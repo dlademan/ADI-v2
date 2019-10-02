@@ -31,6 +31,7 @@ class TestFolderTreeFrame(wx.Frame):
         self.tree = None
 
         self.data = DataHandler()
+        self.set_pos_and_size()
 
         self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), True)
         self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), True)
@@ -119,9 +120,17 @@ class TestFolderTreeFrame(wx.Frame):
     def on_source_change(self, event=None):
         pass
 
-    def on_close(self, event):
-        self.data.close()
+    def on_close(self, event=None):
+        logging.debug('on_close')
+        position = self.GetPosition().Get()
+        size = self.GetSize().Get()
+
+        self.data.close(position, size)
         event.Skip()
+
+    def set_pos_and_size(self):
+        self.SetPosition(self.data.config.win_pos)
+        self.SetSize(self.data.config.win_size)
 
 
 app = TestFolderTreeApp()

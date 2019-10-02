@@ -15,13 +15,16 @@ class MainFrame(wx.Frame):
 
         wx.Frame.__init__(self, parent, wx_id, title,
                           pos=wx.DefaultPosition,
-                          size=(1300, 800),
+                          size=(1100, 800),
                           style=wx.DEFAULT_FRAME_STYLE)
 
         self.data: DataHandler = DataHandler()
         self.tree_library = None
 
         self._create_splitter()
+        self.set_pos_and_size()
+
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.Show()
 
@@ -118,6 +121,21 @@ class MainFrame(wx.Frame):
     def on_source_change(self, event=None):
         pass
 
-    def on_close(self):
-        self.data.database.connection.close()
-        self.Close()
+    def on_close(self, event=None):
+        position = self.GetPosition().Get()
+        size = self.GetSize().Get()
+
+        self.data.close(position, size)
+        event.Skip()
+
+    def set_pos_and_size(self):
+        win_pos = list(self.data.config.win_pos)
+        win_pos[0] = int(win_pos[0])
+        win_pos[1] = int(win_pos[1])
+
+        win_size = list(self.data.config.win_size)
+        win_size[0] = int(win_size[0])
+        win_size[1] = int(win_size[1])
+
+        self.SetPosition(wx.Point(*win_pos))
+        self.SetSize(wx.Size(*win_size))

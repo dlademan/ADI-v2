@@ -11,7 +11,7 @@ class ConfigHandler:
 
     def __init__(self):
         self.user_folder_path: Path = FolderHelpers.get_user_folder()
-        self.debug = True if '-d' in sys.argv else False
+        self.debug = True if '--debug' in sys.argv else False
 
         if not self.user_folder_path.exists():
             self.user_folder_path.mkdir(parents=True)
@@ -63,7 +63,7 @@ class ConfigHandler:
         logging.info('Creating ' + self.config_path.name + ' in ' + str(self.user_folder_path))
         self._config.write()
 
-    def save_config(self):
+    def save_config(self, position=None, size=None):
         self._config['Options'] = {}
         self._config['Options']['archive'] = self.archive
         self._config['Options']['library'] = self.library
@@ -73,8 +73,12 @@ class ConfigHandler:
         self._config['Options']['detect'] = self.detect
 
         self._config['Dimensions'] = {}
-        self._config['Dimensions']['win_size'] = (1300, 800)
-        self._config['Dimensions']['win_pos'] = wx.DefaultPosition.Get()
+        if size is not None:
+            logging.debug('Setting win_size to: ' + str(size))
+            self._config['Dimensions']['win_size'] = size
+        if position is not None:
+            logging.debug('Setting win_pos to: ' + str(position))
+            self._config['Dimensions']['win_pos'] = position
         self._config['Dimensions']['first'] = self.first
         self._config['Dimensions']['version'] = self.version
 

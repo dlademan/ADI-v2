@@ -12,7 +12,7 @@ class DataHandler:
         self.database = DatabaseHandler()
         self.queue = QueueHandler()
 
-    def close(self):
-        self.config.save_config()
+    def close(self, position, size):
+        self.config.save_config(position, size)
         self.database.close()
 
