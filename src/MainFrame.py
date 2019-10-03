@@ -22,6 +22,8 @@ class MainFrame(wx.Frame):
         self.data: DataHandler = DataHandler()
         self.tree_library = None
 
+        # todo get rid of this hack
+        # create a proper config window and prompt on start
         self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), 0, True)
         self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), 1, True)
 
@@ -166,8 +168,8 @@ class MainFrame(wx.Frame):
         self.size_label.SetLabel(size_text)
 
     def _blank_source_details(self):
-        self.count_label.SetLabel('Zips:')
-        self.size_label.SetLabel('Size:')
+        self.count_label.SetLabel('')
+        self.size_label.SetLabel('')
 
     def _get_selected_source_path(self):
         sources = self.data.database.select_all_source_folders()
@@ -183,8 +185,10 @@ class MainFrame(wx.Frame):
 
     def _on_source_change(self, event=None):
         self._disable_frame()
-        source_index = self._get_selected_source_path()
+        self._blank_source_details()
+
         self.tree_library.make_from_db(self.chooser.GetSelection())
+
         self._update_source_details()
         self._enable_frame()
 
