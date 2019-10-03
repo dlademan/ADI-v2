@@ -11,6 +11,10 @@ from MenuBar import MenuBar
 class MainFrame(wx.Frame):
     """
     Main frame window of ADI
+
+    Attributes:
+        self.data:     DataHandler
+        self.tree_tab: TreePanel
     """
 
     def __init__(self, parent, wx_id, title):
@@ -21,7 +25,7 @@ class MainFrame(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE)
 
         self.data: DataHandler = DataHandler()
-        self.tree_tab: TreePanel = None
+        self.tree_tab = None
 
         # todo get rid of this hack
         # create a proper config window and prompt on start
@@ -51,14 +55,11 @@ class MainFrame(wx.Frame):
         self.SetSize(wx.Size(*self.data.config.win_size))
 
     def _create_body(self):
-        self._create_menu_bar()
+        self.menu_bar = MenuBar()
+        self.SetMenuBar(self.menu_bar)
+
         self._create_main_splitter()
         self._set_pos_and_size()
-
-    def _create_menu_bar(self):
-        self.menu_bar = MenuBar()
-
-        self.SetMenuBar(self.menu_bar)
 
     def _create_main_splitter(self):
         logging.info("Creating main_splitter")
