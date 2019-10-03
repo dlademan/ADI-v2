@@ -11,7 +11,7 @@ import logging
 
 class FolderTree(wx.TreeCtrl):
 
-    def __init__(self, parent, data: DataHandler, root_path,
+    def __init__(self, parent, data: DataHandler, root_path: Path, source_index: int,
                  wx_id=wx.ID_ANY, position=wx.DefaultPosition, size=wx.DefaultSize, style=wx.DEFAULT_FRAME_STYLE):
 
         wx.TreeCtrl.__init__(self, parent, wx_id, position, size, style)
@@ -23,12 +23,14 @@ class FolderTree(wx.TreeCtrl):
 
         self.AssignImageList(self.create_image_list())
 
-        self.make(root_path)
+        self.make(root_path, source_index)
 
-    def make(self, root_path: Path):
+    def make(self, root_path: Path, source_index: int):
         self.DeleteAllItems()
         self.zip_count = 0
         self.size = 0
+        if root_path is None:
+            return
 
         logging.info("Making tree with: " + str(root_path))
 
@@ -36,12 +38,12 @@ class FolderTree(wx.TreeCtrl):
             logging.critical('Provided path for FolderTree.make() not a folder!')
             return
 
-        root_data = {'id': self.data_handler.database.create_folder(root_path),
+        root_data = {'id': self.data_handler.database.create_folder(root_path, source_index),
                      'type': 'folder',
                      'path': root_path}
 
         self.root_node = self.AddRoot(root_path.name, data=root_data)
-        node_list = self.populate(self.root_node, root_data)
+        node_list = self.populate(self.root_node, root_data, source_index)
 
         for node in node_list:
             if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:
@@ -49,7 +51,7 @@ class FolderTree(wx.TreeCtrl):
 
         logging.info("Finished making tree")
 
-    def populate(self, current_node, current_data):
+    def populate(self, current_node, current_data, source_index):
         node_list = []
 
         sub_list = [x for x in current_data['path'].iterdir()]
@@ -57,7 +59,7 @@ class FolderTree(wx.TreeCtrl):
         for sub_path in sub_list:
 
             if sub_path.is_dir():
-                directory = self.data_handler.database.create_folder(sub_path)
+                directory = self.data_handler.database.create_folder(sub_path, source_index)
                 next_data = {'id': directory[0],
                              'type': 'folder',
                              'path': sub_path}
@@ -65,12 +67,13 @@ class FolderTree(wx.TreeCtrl):
                 next_node = self.AppendItem(current_node, sub_path.name, data=next_data, image=0)
                 node_list.append(next_node)
 
-                temp_list = self.populate(next_node, next_data)
+                temp_list = self.populate(next_node, next_data, source_index)
                 node_list += temp_list
 
             elif sub_path.suffix == '.zip':
                 self.zip_count += 1
                 self.size += FileHelpers.get_file_size(sub_path)
+
                 asset = self.data_handler.database.create_asset(sub_path)
                 self.data_handler.database.create_file_paths(asset.idn)
                 next_data = {'id': asset.idn,

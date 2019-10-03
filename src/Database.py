@@ -154,7 +154,7 @@ class DatabaseHandler:
 
         return success, asset
 
-    def create_folder(self, path: Path, source=False):
+    def create_folder(self, path: Path, parent: int, source: bool = False, ):
 
         rows = self.select_folder_by_path(path)
         if len(rows) == 1:
@@ -167,39 +167,49 @@ class DatabaseHandler:
             return ()
 
         sql = ''' 
-        INSERT INTO folders(path,title,file_count,size_raw,source) 
-        VALUES(?,?,?,?,?)
+        INSERT INTO folders(source,parent,path,title,file_count,size_raw) 
+        VALUES(?,?,?,?,?,?)
         '''
 
-        path_str = str(path)
         title = path.name
         file_count = FolderHelpers.get_zip_count(path)
         size_raw = FolderHelpers.get_folder_size(path)
 
-        folder = (path_str, title, file_count, size_raw, source)
-
-        cursor = self.connection.cursor()
+        folder = (source, parent, str(path), title, file_count, size_raw)
 
         try:
+            cursor = self.connection.cursor()
             logging.debug('Inserting \'' + path.name + '\' into folders table')
             cursor.execute(sql, folder)
             self.connection.commit()
+            return (cursor.lastrowid, *folder)
         except sqlError as e:
             logging.critical(e)
-
-        return (cursor.lastrowid, *folder)
+            return None
 
     def select_folder_by_path(self, path: Path):
-        cursor = self.connection.cursor()
-        cursor.execute('SELECT * FROM folders WHERE path=?', (str(path),))
-        rows = cursor.fetchall()
-        return rows
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM folders WHERE path=?', (str(path),))
+            return cursor.fetchall()
+        except sqlError as e:
+            logging.critical(e)
+            return None
 
     def select_folder_by_id(self, folder_id: int):
         cursor = self.connection.cursor()
         cursor.execute('SELECT * FROM folders WHERE id=?', (folder_id,))
         row = cursor.fetchone()
         return row
+
+    def select_all_folders_by_source_parent(self, source_parent: int):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM folders WHERE source_parent=?', (source_parent,))
+            return cursor.fetchall()
+        except sqlError as e:
+            logging.critical(e)
+            return None
 
     def select_all_source_folders(self):
         cursor = self.connection.cursor()

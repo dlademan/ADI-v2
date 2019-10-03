@@ -31,9 +31,11 @@ CREATE TABLE IF NOT EXISTS asset_tags (
 
 CREATE TABLE IF NOT EXISTS folders (
     id integer PRIMARY KEY,
+    source bool NOT NULL,
+    parent integer,
     path text NOT NULL,
     title text NOT NULL,
     file_count integer NOT NULL,
     size_raw integer NOT NULL,
-    source bool NOT NULL
+    UNIQUE (id, parent, path)
 );

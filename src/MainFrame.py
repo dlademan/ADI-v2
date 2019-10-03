@@ -1,4 +1,5 @@
 import wx
+import logging
 from pathlib import Path
 from Tree import FolderTree
 
@@ -21,24 +22,77 @@ class MainFrame(wx.Frame):
         self.data: DataHandler = DataHandler()
         self.tree_library = None
 
-        self._create_splitter()
-        self.set_pos_and_size()
+        self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), 0, True)
+        self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), 1, True)
 
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self._create_body()
+
+        self.Bind(wx.EVT_CLOSE, self._on_close)
 
         self.Show()
-
-    def _disable_frame(self, event=None):
-        self.main_splitter.Disable()
 
     def _enable_frame(self, event=None):
         self.main_splitter.Enable()
 
-    def _create_splitter(self):
+    def _disable_frame(self, event=None):
+        self.main_splitter.Disable()
+
+    def _on_close(self, event=None):
+        self.data.close(self.GetPosition().Get(),
+                        self.GetSize().Get())
+        event.Skip()
+        self.Destroy()
+
+    def _set_pos_and_size(self):
+        self.SetPosition(wx.Point(*self.data.config.win_pos))
+        self.SetSize(wx.Size(*self.data.config.win_size))
+
+    def _create_body(self):
+        self._create_menu_bar()
+        self._create_main_splitter()
+        self._set_pos_and_size()
+
+    def _create_menu_bar(self):
+        logging.info("Creating menu_bar")
+
+        ##### File Menu #################
+        file_menu = wx.Menu()
+        file_refresh = wx.MenuItem(file_menu, -1, '&Refresh')
+        file_quit = wx.MenuItem(file_menu, wx.ID_EXIT, '&Quit')
+
+        self.Bind(wx.EVT_MENU, self._on_refresh_tree, file_refresh)
+        self.Bind(wx.EVT_MENU, self._on_close, file_quit)
+
+        file_menu.Append(file_refresh)
+        file_menu.AppendSeparator()
+        file_menu.Append(file_quit)
+
+        ##### Library Menu ###############
+
+        ##### View Menu ##################
+        view_menu = wx.Menu()
+        view_settings = wx.MenuItem(view_menu, wx.ID_ANY, '&Configuration')
+
+        self.Bind(wx.EVT_MENU, self._on_show_config_frame, view_settings)
+
+        view_menu.Append(view_settings)
+
+        ##### Menu Bar ###################
+
+        menu_bar = wx.MenuBar()
+        menu_bar.Append(file_menu, '&File')
+        # menu_bar.Append(lib_menu, '&Library')
+        menu_bar.Append(view_menu, '&View')
+        self.SetMenuBar(menu_bar)
+
+        pass
+
+    def _create_main_splitter(self):
+        logging.info("Creating main_splitter")
 
         sources = self.data.database.select_all_source_folders()
         choices = []
-        for source in sources: choices.append(source[1])
+        for source in sources: choices.append(source[4])
 
         ###################################
         self.main_splitter = wx.SplitterWindow(self)
@@ -52,6 +106,7 @@ class MainFrame(wx.Frame):
 
         self.chooser = wx.Choice(left_panel, choices=choices)
         self.chooser.SetSelection(0)
+        # if len(choices) < 2: self.chooser.Disable()
         button_refresh = wx.Button(left_panel, label='Refresh', style=wx.BORDER_NONE)
 
         font_title = wx.Font(wx.FontInfo(16))
@@ -62,7 +117,10 @@ class MainFrame(wx.Frame):
         self.count_label.SetFont(font_data)
         self.size_label.SetFont(font_data)
 
-        self.tree_library = FolderTree(left_panel, self.data, self._get_selected_source_path())
+        self.tree_library = FolderTree(parent=left_panel,
+                                       data=self.data,
+                                       root_path=self._get_selected_source_path(),
+                                       source_index=self.chooser.GetSelection())
 
         archive_box = wx.BoxSizer()
         archive_box.Add(button_refresh, 0, wx.EXPAND | wx.ALL)
@@ -92,8 +150,8 @@ class MainFrame(wx.Frame):
         self.main_splitter.SplitVertically(left_panel, right_panel)
 
         # Binds ###########################
-        self.chooser.Bind(wx.EVT_CHOICE, self.on_source_change)
-        button_refresh.Bind(wx.EVT_BUTTON, self.on_refresh_button_press)
+        self.chooser.Bind(wx.EVT_CHOICE, self._on_source_change)
+        button_refresh.Bind(wx.EVT_BUTTON, self._on_refresh_tree)
 
         self._update_source_details()
 
@@ -107,35 +165,24 @@ class MainFrame(wx.Frame):
         self.count_label.SetLabel(zips_text)
         self.size_label.SetLabel(size_text)
 
+    def _blank_source_details(self):
+        self.count_label.SetLabel('Zips:')
+        self.size_label.SetLabel('Size:')
+
     def _get_selected_source_path(self):
         sources = self.data.database.select_all_source_folders()
         selected = self.chooser.GetSelection()
-        return Path(sources[selected][1])
+        return Path(sources[selected][3])
 
-    def on_refresh_button_press(self, event=None):
+    def _on_refresh_tree(self, event=None):
         self._disable_frame()
-        self.tree_library.make(self._get_selected_source_path())
+        self._blank_source_details()
+        self.tree_library.make(self._get_selected_source_path(), self.chooser.GetSelection())
         self._update_source_details()
         self._enable_frame()
 
-    def on_source_change(self, event=None):
-        self.on_refresh_button_press()
+    def _on_source_change(self, event=None):
+        self._on_refresh_tree()
 
-    def on_close(self, event=None):
-        position = self.GetPosition().Get()
-        size = self.GetSize().Get()
-
-        self.data.close(position, size)
-        event.Skip()
-
-    def set_pos_and_size(self):
-        win_pos = list(self.data.config.win_pos)
-        win_pos[0] = int(win_pos[0])
-        win_pos[1] = int(win_pos[1])
-
-        win_size = list(self.data.config.win_size)
-        win_size[0] = int(win_size[0])
-        win_size[1] = int(win_size[1])
-
-        self.SetPosition(wx.Point(*win_pos))
-        self.SetSize(wx.Size(*win_size))
+    def _on_show_config_frame(self, event=None):
+        logging.debug('Showing config_frame')

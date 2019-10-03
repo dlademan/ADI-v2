@@ -37,8 +37,8 @@ class ConfigHandler:
         self.detect: bool = bool(self._config['Options']['detect'])
 
         # load Dimensions
-        self.win_size = tuple(self._config['Dimensions']['win_size'])
-        self.win_pos = tuple(self._config['Dimensions']['win_pos'])
+        self.win_size = list(map(int, self._config['Dimensions']['win_size']))
+        self.win_pos = list(map(int, self._config['Dimensions']['win_pos']))
         self.first = bool(self._config['Dimensions']['first'])
         self.version = self._config['Dimensions']['version']
 
@@ -85,7 +85,6 @@ class ConfigHandler:
         logging.info('Saving config to: ' + str(self.config_path.name))
         self._config.write()
 
-    # todo check for size of file and create new log file when above 1mb
     def _init_logger(self):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
@@ -93,7 +92,7 @@ class ConfigHandler:
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
         debug_handler = RotatingFileHandler(self.user_folder_path / 'log_debug.txt',
-                                            mode='a', maxBytes=2*1024*1024,
+                                            mode='a', maxBytes=2 * 1024 * 1024,
                                             backupCount=1, encoding=None, delay=0)
 
         debug_handler.setLevel(logging.DEBUG)
