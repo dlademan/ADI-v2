@@ -3,7 +3,7 @@ import wx
 import logging
 from pathlib import Path
 
-from Tree import FolderTree
+from Trees import FolderTree
 from Data import DataHandler
 from Helpers import FolderHelpers, FileHelpers
 
