@@ -117,7 +117,7 @@ class MainFrame(wx.Frame):
         self.count_label.SetFont(font_data)
         self.size_label.SetFont(font_data)
 
-        self.tree_library = FolderTree(parent=left_panel,
+        self.tree_library: FolderTree = FolderTree(parent=left_panel,
                                        data=self.data,
                                        root_path=self._get_selected_source_path(),
                                        source_index=self.chooser.GetSelection())
@@ -177,12 +177,16 @@ class MainFrame(wx.Frame):
     def _on_refresh_tree(self, event=None):
         self._disable_frame()
         self._blank_source_details()
-        self.tree_library.make(self._get_selected_source_path(), self.chooser.GetSelection())
+        self.tree_library.make_from_path(self._get_selected_source_path(), self.chooser.GetSelection())
         self._update_source_details()
         self._enable_frame()
 
     def _on_source_change(self, event=None):
-        self._on_refresh_tree()
+        self._disable_frame()
+        source_index = self._get_selected_source_path()
+        self.tree_library.make_from_db(self.chooser.GetSelection())
+        self._update_source_details()
+        self._enable_frame()
 
     def _on_show_config_frame(self, event=None):
         logging.debug('Showing config_frame')

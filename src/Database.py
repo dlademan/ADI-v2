@@ -58,7 +58,7 @@ class DatabaseHandler:
         else:
             logging.critical("Error! Cannot create the database connection.")
 
-    def create_asset(self, path: Path):
+    def create_asset(self, path: Path, parent: int):
 
         if path.suffix != '.zip':
             logging.critical('Path provided does not point to a zip file')
@@ -74,23 +74,24 @@ class DatabaseHandler:
         path_str = str(path.parent)
         filename = path.name
         zip_size = FileHelpers.get_file_size(path)
+        installed = False  # todo check if asset is already installed
 
-        values = (sku, product_name, path_str, filename, zip_size, False)
+        values = (parent, sku, product_name, path_str, filename, zip_size, installed)
 
         sql = ''' 
-        INSERT INTO assets(sku,product_name,path,filename,zip_size,installed) 
-        VALUES(?,?,?,?,?,?)
+        INSERT INTO assets(parent,sku,product_name,path,filename,zip_size,installed) 
+        VALUES(?,?,?,?,?,?,?)
         '''
 
         cursor = self.connection.cursor()
         try:
-            logging.debug('Inserting ' + values[3] + ' into assets table')
+            logging.debug('Inserting ' + values[4] + ' into assets table')
             cursor.execute(sql, values)
             self.connection.commit()
         except sqlError as e:
             logging.critical(e)
 
-        return Asset(cursor.lastrowid, sku, product_name, path, filename, zip_size, False)
+        return Asset(cursor.lastrowid, parent, sku, product_name, path, filename, zip_size, installed)
 
     def find_asset_by_zip(self, path: Path):
         logging.debug('Trying to find asset in database from: ' + path.name)
@@ -154,6 +155,15 @@ class DatabaseHandler:
 
         return success, asset
 
+    def select_all_assets_by_parent(self, parent: int):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM assets WHERE parent=?', (parent,))
+            return cursor.fetchall()
+        except sqlError as e:
+            logging.critical(e)
+            return None
+
     def create_folder(self, path: Path, parent: int, source: bool = False, ):
 
         rows = self.select_folder_by_path(path)
@@ -202,10 +212,10 @@ class DatabaseHandler:
         row = cursor.fetchone()
         return row
 
-    def select_all_folders_by_source_parent(self, source_parent: int):
+    def select_all_folders_by_parent(self, parent: int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute('SELECT * FROM folders WHERE source_parent=?', (source_parent,))
+            cursor.execute('SELECT * FROM folders WHERE parent=?', (parent,))
             return cursor.fetchall()
         except sqlError as e:
             logging.critical(e)

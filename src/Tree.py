@@ -1,4 +1,5 @@
 from Asset import Asset
+from Folder import Folder
 from zipfile import ZipFile
 from pathlib import Path
 from Data import DataHandler
@@ -23,22 +24,22 @@ class FolderTree(wx.TreeCtrl):
 
         self.AssignImageList(self.create_image_list())
 
-        self.make(root_path, source_index)
+        self.make_from_path(root_path, source_index)
 
-    def make(self, root_path: Path, source_index: int):
+    def make_from_path(self, root_path: Path, source_index: int):
         self.DeleteAllItems()
         self.zip_count = 0
         self.size = 0
         if root_path is None:
             return
 
-        logging.info("Making tree with: " + str(root_path))
+        logging.info("Making tree by path with: " + str(root_path))
 
         if not root_path.is_dir():
             logging.critical('Provided path for FolderTree.make() not a folder!')
             return
 
-        root_data = {'id': self.data_handler.database.create_folder(root_path, source_index),
+        root_data = {'id': self.data_handler.database.create_folder(root_path, source_index)[0],
                      'type': 'folder',
                      'path': root_path}
 
@@ -74,8 +75,8 @@ class FolderTree(wx.TreeCtrl):
                 self.zip_count += 1
                 self.size += FileHelpers.get_file_size(sub_path)
 
-                asset = self.data_handler.database.create_asset(sub_path)
-                self.data_handler.database.create_file_paths(asset.idn)
+                asset = self.data_handler.database.create_asset(sub_path, source_index)
+                # self.data_handler.database.create_file_paths(asset.idn)
                 next_data = {'id': asset.idn,
                              'type': 'asset',
                              'path': sub_path}
@@ -85,6 +86,62 @@ class FolderTree(wx.TreeCtrl):
 
         self.SortChildren(current_node)
         return node_list
+
+    def make_from_db(self, source_index: int):
+        self.DeleteAllItems()
+        self.zip_count = 0
+        self.size = 0
+        node_list = {}
+
+        sources = self.data_handler.database.select_all_source_folders()
+        source = Folder(*sources[source_index])
+
+        logging.info('Making tree from database with source ' + str(source_index) + ': ' + str(source.path))
+
+        folders = self.data_handler.database.select_all_folders_by_parent(source_index)
+        if folders is None or len(folders) < 1:
+            logging.error('Database could not find any folders from source_index: ' + str(source_index))
+            return
+
+        root_data = {'id': source.idn,
+                     'type': 'folder',
+                     'path': source.path}
+
+        node_list[str(source.path)] = self.root_node = self.AddRoot(source.title, data=root_data)
+
+        for folder in folders:
+            folder = Folder(*folder)
+
+            if folder.source: continue
+
+            parent_key = str(folder.path.parent)
+            parent_node = node_list[parent_key]
+            folder_data = {'id': folder.idn,
+                           'type': 'folder',
+                           'path': folder.path}
+
+            node_list[str(folder.path)] = self.AppendItem(parent_node, folder.title, data=folder_data, image=0)
+
+        assets = self.data_handler.database.select_all_assets_by_parent(source_index)
+
+        for asset in assets:
+            asset = Asset(*asset)
+            self.zip_count += 1
+            self.size += asset.size_raw
+
+            parent_key = str(asset.path)
+            parent_node = node_list[parent_key]
+            asset_data = {'id': asset.idn,
+                          'type': 'asset',
+                          'path': asset.path}
+
+            node_list[str(asset.path) + str(asset.filename)] = self.AppendItem(parent_node, asset.product_name, data=asset_data, image=1)
+
+        for node in node_list.values():
+            if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:
+                self.Delete(node)
+
+        logging.info("Finished making tree")
 
     def OnCompareItems(self, item1, item2):
         text1 = self.GetItemText(item1)

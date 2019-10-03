@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS assets (
     id integer PRIMARY KEY,
+    parent integer NOT NULL,
     sku integer NOT NULL,
     product_name text NOT NULL,
     path text NOT NULL,
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS asset_tags (
 CREATE TABLE IF NOT EXISTS folders (
     id integer PRIMARY KEY,
     source bool NOT NULL,
-    parent integer,
+    parent integer NOT NULL,
     path text NOT NULL,
     title text NOT NULL,
     file_count integer NOT NULL,

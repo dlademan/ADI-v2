@@ -113,7 +113,7 @@ class TestFolderTreeFrame(wx.Frame):
 
     def on_refresh_button_press(self, event=None):
         self._disable_frame()
-        self.tree.make(self._get_selected_source_path())
+        self.tree.make_from_path(self._get_selected_source_path())
         self._update_source_details()
         self._enable_frame()
 
