@@ -48,7 +48,7 @@ class TestFolderTreeFrame(wx.Frame):
         self.library_panel.Enable()
 
     def _get_selected_source_path(self):
-        sources = self.data.database.select_all_source_folders()
+        sources = self.data.database.select_all_sources()
         selected = self.chooser.GetSelection()
         return Path(sources[selected][1])
 
@@ -57,7 +57,7 @@ class TestFolderTreeFrame(wx.Frame):
         font_title = wx.Font(wx.FontInfo(16))
         font_data = wx.Font(wx.FontInfo(11))
 
-        sources = self.data.database.select_all_source_folders()
+        sources = self.data.database.select_all_sources()
         choices = []
         for source in sources:
             choices.append(source[1])
@@ -112,7 +112,7 @@ class TestFolderTreeFrame(wx.Frame):
 
     def on_refresh_button_press(self, event=None):
         self._disable_frame()
-        self.tree.make_from_path(self._get_selected_source_path())
+        self.tree.make_from_hdd(self._get_selected_source_path())
         self._update_source_details()
         self._enable_frame()
 

@@ -3,13 +3,13 @@ from pathlib import Path
 
 class Asset:
 
-    def __init__(self, idn: int, parent: int,
+    def __init__(self, idn: int, source_id: int,
                  sku: int, product_name: str,
                  path: str, filename: str,
                  size_raw: int, installed: bool):
 
         self.idn = idn
-        self.parent = parent
+        self.source_id = source_id
         self.sku = sku
         self.product_name = product_name
         self.path = Path(path)

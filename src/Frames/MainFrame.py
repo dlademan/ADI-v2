@@ -26,12 +26,14 @@ class MainFrame(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE)
 
         self.data: DataHandler = DataHandler()
-        self.tree_tab = None
+        if self.data.critical:
+            logging.critical('ADI Has experienced a critical error during data initialization and must exit')
+            return
 
-        # todo get rid of this hack
-        # create a proper config window and prompt on start
-        self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), 0, True)
-        self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), 1, True)
+        self.main_splitter = None
+        self.notebook_library = None
+        self.tree_tab = None
+        self.olv_panel = None
 
         self._create_body()
 
@@ -73,13 +75,9 @@ class MainFrame(wx.Frame):
         right_panel = self._create_right_panel()
 
         self.main_splitter.SplitVertically(left_panel, right_panel)
-        self._update_source_details()
 
         # Binds #########################
-        self.tree_tab.source_choice.Bind(wx.EVT_CHOICE, self._on_source_change)
-        self.tree_tab.button_refresh.Bind(wx.EVT_BUTTON, self._on_refresh_tree)
-
-        self.Bind(wx.EVT_MENU, self._on_refresh_tree, self.menu_bar.menus['file_refresh'])
+        self.Bind(wx.EVT_MENU, self.tree_tab.on_refresh_tree, self.menu_bar.menus['file_refresh'])
         self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
         self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
 
@@ -104,40 +102,11 @@ class MainFrame(wx.Frame):
 
         return right_panel
 
-    def _update_source_details(self):
-        source_zip_count = self.tree_tab.tree.zip_count
-        source_folder_size = FileHelpers.format_bytes(self.tree_tab.tree.size)
-
-        zips_text = 'Zips: ' + str(source_zip_count)
-        size_text = 'Size: ' + str(source_folder_size)
-
-        self.tree_tab.count_label.SetLabel(zips_text)
-        self.tree_tab.size_label.SetLabel(size_text)
-
-    def _blank_source_details(self):
-        self.tree_tab.count_label.SetLabel('')
-        self.tree_tab.size_label.SetLabel('')
-
-    def _get_selected_source_path(self):
-        sources = self.data.database.select_all_source_folders()
-        selected = self.tree_tab.source_choice.GetSelection()
-        return Path(sources[selected][3])
-
-    def _on_refresh_tree(self, event=None):
-        self._disable_frame()
-        self._blank_source_details()
-        self.tree_tab.tree.make_from_path(self._get_selected_source_path(), self.tree_tab.source_choice.GetSelection())
-        self._update_source_details()
-        self._enable_frame()
-
-    def _on_source_change(self, event=None):
-        self._disable_frame()
-        self._blank_source_details()
-
-        self.tree_tab.tree.make_from_db(self.tree_tab.source_choice.GetSelection())
-
-        self._update_source_details()
-        self._enable_frame()
+    def _get_selected_source_title(self):
+        selection = self.tree_tab.source_choice.GetSelection()
+        title = self.tree_tab.titles[selection]
+        source = self.data.database.select_source_by_title(title)
+        return source
 
     def _on_show_config_frame(self, event=None):
         logging.debug('Showing config_frame')

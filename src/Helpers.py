@@ -139,7 +139,6 @@ class FolderHelpers:
 
         return count
 
-    # todo make these better?
     @staticmethod
     def get_user_folder():
         if system() == 'Windows':

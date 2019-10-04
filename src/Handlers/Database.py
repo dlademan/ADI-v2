@@ -6,6 +6,8 @@ from zipfile import ZipFile, BadZipFile
 
 from Helpers import FileHelpers, FolderHelpers
 from Objects.Asset import Asset
+from Objects.Folder import Folder
+from Objects.Source import Source
 
 
 class DatabaseHandler:
@@ -58,7 +60,7 @@ class DatabaseHandler:
         else:
             logging.critical("Error! Cannot create the database connection.")
 
-    def create_asset(self, path: Path, parent: int):
+    def create_asset(self, path: Path, source_id: int):
 
         if path.suffix != '.zip':
             logging.critical('Path provided does not point to a zip file')
@@ -76,22 +78,22 @@ class DatabaseHandler:
         zip_size = FileHelpers.get_file_size(path)
         installed = False  # todo check if asset is already installed
 
-        values = (parent, sku, product_name, path_str, filename, zip_size, installed)
+        asset = (source_id, sku, product_name, path_str, filename, zip_size, installed)
 
         sql = ''' 
-        INSERT INTO assets(parent,sku,product_name,path,filename,zip_size,installed) 
+        INSERT INTO assets(source_id,sku,product_name,path,filename,zip_size,installed) 
         VALUES(?,?,?,?,?,?,?)
         '''
 
         cursor = self.connection.cursor()
         try:
-            logging.debug('Inserting ' + values[4] + ' into assets table')
-            cursor.execute(sql, values)
+            logging.debug('Inserting ' + asset[4] + ' into assets table')
+            cursor.execute(sql, asset)
             self.connection.commit()
         except sqlError as e:
             logging.critical(e)
 
-        return Asset(cursor.lastrowid, parent, sku, product_name, path, filename, zip_size, installed)
+        return Asset(cursor.lastrowid, *asset)
 
     def find_asset_by_zip(self, path: Path):
         logging.debug('Trying to find asset in database from: ' + path.name)
@@ -155,10 +157,10 @@ class DatabaseHandler:
 
         return success, asset
 
-    def select_all_assets_by_parent(self, parent: int):
+    def select_all_assets_by_source_id(self, source_id: int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute('SELECT * FROM assets WHERE parent=?', (parent,))
+            cursor.execute('SELECT * FROM assets WHERE source_id=?', (source_id,))
             rows = cursor.fetchall()
         except sqlError as e:
             logging.critical(e)
@@ -170,35 +172,28 @@ class DatabaseHandler:
 
         return assets
 
-    def create_folder(self, path: Path, parent: int, source: bool = False, ):
+    def create_folder(self, path: Path, source_id: int):
 
-        rows = self.select_folder_by_path(path)
-        if len(rows) == 1:
-            return rows[0]
-        elif len(rows) == 0:
-            logging.debug('No folders found matching path: ' + str(path))
-            logging.debug('Creating folder in database')
-        elif len(rows) > 1:
-            logging.critical('Multiple folders found, return empty tuple')
-            return ()
+        folder = self.select_folder_by_path(path)
+        if isinstance(folder, Folder): return folder
 
         sql = ''' 
-        INSERT INTO folders(source,parent,path,title,file_count,size_raw) 
-        VALUES(?,?,?,?,?,?)
+        INSERT INTO folders(source_id,path,title,file_count,size_raw) 
+        VALUES(?,?,?,?,?)
         '''
 
         title = path.name
         file_count = FolderHelpers.get_zip_count(path)
         size_raw = FolderHelpers.get_folder_size(path)
 
-        folder = (source, parent, str(path), title, file_count, size_raw)
+        folder = (source_id, str(path), title, file_count, size_raw)
 
         try:
             cursor = self.connection.cursor()
             logging.debug('Inserting \'' + path.name + '\' into folders table')
             cursor.execute(sql, folder)
             self.connection.commit()
-            return (cursor.lastrowid, *folder)
+            return Folder(cursor.lastrowid, *folder)
         except sqlError as e:
             logging.critical(e)
             return None
@@ -207,31 +202,29 @@ class DatabaseHandler:
         try:
             cursor = self.connection.cursor()
             cursor.execute('SELECT * FROM folders WHERE path=?', (str(path),))
-            return cursor.fetchall()
+            result = cursor.fetchone()
         except sqlError as e:
             logging.critical(e)
+            return None
+
+        if result is not None:
+            return Folder(*result)
+        else:
             return None
 
     def select_folder_by_id(self, folder_id: int):
         cursor = self.connection.cursor()
         cursor.execute('SELECT * FROM folders WHERE id=?', (folder_id,))
-        row = cursor.fetchone()
-        return row
+        return Folder(*cursor.fetchone())
 
-    def select_all_folders_by_parent(self, parent: int):
+    def select_all_folders_by_source_id(self, source_id: int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute('SELECT * FROM folders WHERE parent=?', (parent,))
+            cursor.execute('SELECT * FROM folders WHERE source_id=?', (source_id,))
             return cursor.fetchall()
         except sqlError as e:
             logging.critical(e)
             return None
-
-    def select_all_source_folders(self):
-        cursor = self.connection.cursor()
-        cursor.execute('SELECT * FROM folders WHERE source=?', (True,))
-        rows = cursor.fetchall()
-        return rows
 
     def create_all_file_paths(self, asset_ids: list):
         for asset_id in asset_ids:
@@ -282,6 +275,69 @@ class DatabaseHandler:
         cursor.execute('SELECT * FROM file_paths WHERE asset_id=?', (asset_id,))
         results = cursor.fetchall()
         return results
+
+    def create_source(self, title: str, path: Path):
+
+        source = self.select_source_by_title(title)
+        if source is not None:
+            return source
+
+        sql = ''' 
+        INSERT INTO sources(title,path,file_count,size_raw) 
+        VALUES(?,?,?,?)
+        '''
+        file_count = FolderHelpers.get_zip_count(path)
+        size_raw = FolderHelpers.get_folder_size(path)
+
+        source = (title, str(path), file_count, size_raw)
+
+        try:
+            cursor = self.connection.cursor()
+            logging.debug('Inserting \'' + title + '\' into sources table')
+            cursor.execute(sql, source)
+            self.connection.commit()
+            return Source(cursor.lastrowid, *source)
+        except sqlError as e:
+            logging.critical(e)
+            return None
+
+    def select_all_sources(self):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM sources')
+        results = cursor.fetchall()
+        sources = []
+        for row in results:
+            sources.append(Source(*row))
+
+        return sources
+
+    def select_source_by_title(self, title: str):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM sources WHERE title=?', (title,))
+            result = cursor.fetchone()
+        except sqlError as e:
+            logging.critical(e)
+            return None
+
+        if result is not None:
+            return Source(*result)
+        else:
+            return None
+
+    def select_source_by_idn(self, idn: int):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM sources WHERE id=?', (idn,))
+            result = cursor.fetchone()
+        except sqlError as e:
+            logging.critical(e)
+            return None
+
+        if result is not None:
+            return Source(*result)
+        else:
+            return None
 
     def close(self):
         logging.info('Closing connection to database')

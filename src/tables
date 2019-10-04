@@ -1,12 +1,13 @@
 CREATE TABLE IF NOT EXISTS assets (
     id integer PRIMARY KEY,
-    parent integer NOT NULL,
+    source_id integer NOT NULL,
     sku integer NOT NULL,
     product_name text NOT NULL,
     path text NOT NULL,
     filename text NOT NULL,
     zip_size integer NOT NULL,
     installed bool NOT NULL,
+    FOREIGN KEY (source_id) REFERENCES sources (id),
     UNIQUE (filename, zip_size)
 );
 
@@ -32,11 +33,20 @@ CREATE TABLE IF NOT EXISTS asset_tags (
 
 CREATE TABLE IF NOT EXISTS folders (
     id integer PRIMARY KEY,
-    source bool NOT NULL,
-    parent integer NOT NULL,
+    source_id integer NOT NULL,
     path text NOT NULL,
     title text NOT NULL,
     file_count integer NOT NULL,
     size_raw integer NOT NULL,
-    UNIQUE (id, parent, path)
+    FOREIGN KEY (source_id) REFERENCES sources (id),
+    UNIQUE (id, source_id, path)
+);
+
+CREATE TABLE IF NOT EXISTS sources (
+    id integer PRIMARY KEY,
+    title text NOT NULL,
+    path text NOT NULL,
+    file_count integer NOT NULL,
+    size_raw integer NOT NULL,
+    UNIQUE (id, title)
 );

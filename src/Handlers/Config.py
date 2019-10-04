@@ -3,7 +3,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from configobj import ConfigObj
+from configobj import ConfigObj, ConfigObjError
 from Helpers import FolderHelpers
 
 
@@ -18,23 +18,31 @@ class ConfigHandler:
 
         self._init_logger()
 
-        self.config_path = self.user_folder_path / 'debug.ini' if self.debug else self.user_folder_path / 'config.ini'
-
-        self.dimensions_path: Path = self.user_folder_path / 'dimensions.pkl'
-        self.backup_path: Path = self.user_folder_path / 'backup'
+        if self.debug:
+            self.config_path = self.user_folder_path / 'debug.ini'
+        else:
+            self.config_path = self.user_folder_path / 'config.ini'
 
         if not self.config_path.exists(): self._create_config()
 
-        self._config = ConfigObj(str(self.config_path))
+        try:
+            self._config = ConfigObj(str(self.config_path))
+        except ConfigObjError as e:
+            logging.critical('Error when establishing connection to ini file')
+            logging.critical(e)
+            self._config = None
+            return
 
         # load Options
         # todo allow multiple install paths and multiple archive paths
-        self.archive: Path = Path(self._config['Options']['archive'])
-        self.library: Path = Path(self._config['Options']['library'])
         self.clear_queue: bool = bool(self._config['Options']['clear_queue'])
         self.expand: bool = bool(self._config['Options']['expand'])
         self.close_dialog: bool = bool(self._config['Options']['close_dialog'])
         self.detect: bool = bool(self._config['Options']['detect'])
+
+        # load Directories
+        self.archives: dict = self._config['Archives']
+        self.libraries: dict = self._config['Libraries']
 
         # load Dimensions
         self.win_size = list(map(int, self._config['Dimensions']['win_size']))
@@ -47,12 +55,16 @@ class ConfigHandler:
         self._config.filename = self.config_path
 
         self._config['Options'] = {}
-        self._config['Options']['archive'] = FolderHelpers.get_default_archive_path()
-        self._config['Options']['library'] = FolderHelpers.get_default_library_path()
         self._config['Options']['clear_queue'] = True
         self._config['Options']['expand'] = True
         self._config['Options']['close_dialog'] = False
         self._config['Options']['detect'] = False
+
+        self._config['Archives'] = {}
+        self._config['Archives']['daz_default'] = FolderHelpers.get_default_archive_path()
+
+        self._config['Libraries'] = {}
+        self._config['Libraries']['daz_default'] = FolderHelpers.get_default_library_path()
 
         self._config['Dimensions'] = {}
         self._config['Dimensions']['win_size'] = (1300, 800)
@@ -64,9 +76,10 @@ class ConfigHandler:
         self._config.write()
 
     def save_config(self, position=None, size=None):
+        self._config['Archives'] = self.archives
+        self._config['Libraries'] = self.libraries
+
         self._config['Options'] = {}
-        self._config['Options']['archive'] = self.archive
-        self._config['Options']['library'] = self.library
         self._config['Options']['clear_queue'] = self.clear_queue
         self._config['Options']['expand'] = self.expand
         self._config['Options']['close_dialog'] = self.close_dialog

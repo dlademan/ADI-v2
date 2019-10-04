@@ -16,12 +16,9 @@ class OLVPanel(wx.Panel):
     def __init__(self, parent, data: DataHandler):
         wx.Panel.__init__(self, parent)
         self.data = data
+        self.idns = [0]
 
-        sources = data.database.select_all_source_folders()
-        choices = ['All Assets']
-        for source in sources: choices.append(source[3])
-
-        self.source_choice = wx.Choice(self, choices=choices)
+        self.source_choice = wx.Choice(self, choices=self._get_choices())
         self.source_choice.SetSelection(0)
 
         idn_column = ColumnDefn("ID", "right", 60, "idn")
@@ -50,13 +47,25 @@ class OLVPanel(wx.Panel):
 
         self.source_choice.Bind(wx.EVT_CHOICE, self.on_source_change)
 
-    def on_source_change(self, event=None):
+    def _get_choices(self):
+        sources = self.data.sources.values()
+        choices = ['All Assets']
+
+        for source in sources:
+            choices.append(str(source.path))
+            self.idns.append(source.idn)
+
+        return choices
+
+    def on_source_change(self, event: wx.Event = None):
         selection = self.source_choice.GetSelection()
+        idn = self.idns[selection]
+        source = self.data.database.select_source_by_idn(idn)
 
         if selection == 0:
             assets = self.data.database.select_all_assets()
         else:
-            assets = self.data.database.select_all_assets_by_parent(selection - 1)
+            assets = self.data.database.select_all_assets_by_source_id(source.idn)
 
         self.olv.DeleteAllItems()
         self.olv.SetObjects(assets)
