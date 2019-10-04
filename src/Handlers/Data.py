@@ -1,7 +1,6 @@
-import logging
-from Config import ConfigHandler
-from QueueHandler import QueueHandler
-from Database import DatabaseHandler
+from Handlers.Config import ConfigHandler
+from Handlers.Queue import QueueHandler
+from Handlers.Database import DatabaseHandler
 
 
 class DataHandler:

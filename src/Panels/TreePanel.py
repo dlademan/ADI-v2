@@ -1,8 +1,8 @@
 import wx
 from pathlib import Path
 
-from Trees import FolderTree
-from Data import DataHandler
+from MiscWXs.Trees import FolderTree
+from Handlers.Data import DataHandler
 
 
 class TreePanel(wx.Panel):

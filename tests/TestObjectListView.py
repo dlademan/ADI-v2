@@ -1,12 +1,8 @@
-import sys
 import wx
 import logging
-from pathlib import Path
 from ObjectListView2 import ColumnDefn, ObjectListView
 
-from Trees import FolderTree
-from Data import DataHandler
-from Helpers import FolderHelpers, FileHelpers
+from Handlers.Data import DataHandler
 
 
 class TestObjectListViewApp(wx.App):

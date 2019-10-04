@@ -1,11 +1,10 @@
-import sys
 import wx
 import logging
 from pathlib import Path
 
-from Trees import FolderTree
-from Data import DataHandler
-from Helpers import FolderHelpers, FileHelpers
+from MiscWXs.Trees import FolderTree
+from Handlers.Data import DataHandler
+from Helpers import FileHelpers
 
 
 class TestFolderTreeApp(wx.App):

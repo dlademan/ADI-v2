@@ -2,10 +2,10 @@ import logging
 import sqlite3
 from sqlite3 import Error as sqlError
 from pathlib import Path
-from zipfile import ZipFile, ZipInfo, BadZipFile
+from zipfile import ZipFile, BadZipFile
 
 from Helpers import FileHelpers, FolderHelpers
-from Asset import Asset
+from Objects.Asset import Asset
 
 
 class DatabaseHandler:

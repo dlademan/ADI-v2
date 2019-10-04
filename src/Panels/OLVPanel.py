@@ -1,7 +1,7 @@
 import wx
 from ObjectListView2 import ObjectListView, ColumnDefn
 
-from Data import DataHandler
+from Handlers.Data import DataHandler
 
 
 class OLVPanel(wx.Panel):

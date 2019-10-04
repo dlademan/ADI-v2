@@ -2,11 +2,11 @@ import wx
 import logging
 from pathlib import Path
 
-from Data import DataHandler
+from Handlers.Data import DataHandler
 from Helpers import FileHelpers
-from TreePanel import TreePanel
-from OLVPanel import OLVPanel
-from MenuBar import MenuBar
+from Panels.TreePanel import TreePanel
+from Panels.OLVPanel import OLVPanel
+from MiscWXs.MenuBar import MenuBar
 
 
 class MainFrame(wx.Frame):

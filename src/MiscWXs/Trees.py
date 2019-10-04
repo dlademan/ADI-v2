@@ -1,12 +1,9 @@
-from Asset import Asset
-from Folder import Folder
-from zipfile import ZipFile
+from Objects.Folder import Folder
 from pathlib import Path
-from Data import DataHandler
+from Handlers.Data import DataHandler
 from Helpers import FileHelpers
 
 import wx
-import os
 import logging
 
 
