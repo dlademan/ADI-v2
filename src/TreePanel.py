@@ -30,8 +30,8 @@ class TreePanel(wx.Panel):
         font_data = wx.Font(wx.FontInfo(11))
 
         # Create Items ###################
-        self.chooser = wx.Choice(self, choices=choices)
-        self.chooser.SetSelection(0)
+        self.source_choice = wx.Choice(self, choices=choices)
+        self.source_choice.SetSelection(0)
         self.button_refresh = wx.Button(self, label='Refresh', style=wx.BORDER_NONE)
 
         self.count_label = wx.StaticText(self, label='')
@@ -42,13 +42,12 @@ class TreePanel(wx.Panel):
         self.tree: FolderTree = FolderTree(parent=self,
                                            data=data,
                                            root_path=self._get_selected_source_path(data),
-                                           source_index=self.chooser.GetSelection())
+                                           source_index=self.source_choice.GetSelection())
 
         # Assemble Boxes #################
         archive_box = wx.BoxSizer()
         archive_box.Add(self.button_refresh, 0, wx.EXPAND | wx.ALL)
-        archive_box.Add(self.chooser, 1, wx.EXPAND | wx.ALL)
-        archive_box.Add(0, 0, 2)
+        archive_box.Add(self.source_choice, 1, wx.EXPAND | wx.ALL)
 
         details_box = wx.BoxSizer()
         details_box.Add(10, 0, 0)
@@ -67,7 +66,7 @@ class TreePanel(wx.Panel):
 
     def _get_selected_source_path(self, data: DataHandler):
         sources = data.database.select_all_source_folders()
-        selected = self.chooser.GetSelection()
+        selected = self.source_choice.GetSelection()
         return Path(sources[selected][3])
 
 

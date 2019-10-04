@@ -5,6 +5,7 @@ from pathlib import Path
 from Data import DataHandler
 from Helpers import FileHelpers
 from TreePanel import TreePanel
+from OLVPanel import OLVPanel
 from MenuBar import MenuBar
 
 
@@ -65,7 +66,7 @@ class MainFrame(wx.Frame):
         logging.info("Creating main_splitter")
 
         self.main_splitter = wx.SplitterWindow(self)
-        self.main_splitter.SetSashGravity(0.5)
+        self.main_splitter.SetSashGravity(0.55)
         self.main_splitter.SetSashInvisible()
 
         left_panel = self._create_left_panel()
@@ -75,7 +76,7 @@ class MainFrame(wx.Frame):
         self._update_source_details()
 
         # Binds #########################
-        self.tree_tab.chooser.Bind(wx.EVT_CHOICE, self._on_source_change)
+        self.tree_tab.source_choice.Bind(wx.EVT_CHOICE, self._on_source_change)
         self.tree_tab.button_refresh.Bind(wx.EVT_BUTTON, self._on_refresh_tree)
 
         self.Bind(wx.EVT_MENU, self._on_refresh_tree, self.menu_bar.menus['file_refresh'])
@@ -87,7 +88,10 @@ class MainFrame(wx.Frame):
 
         self.notebook_library = wx.Notebook(left_panel)
         self.tree_tab: TreePanel = TreePanel(self.notebook_library, self.data)
+        self.olv_panel: OLVPanel = OLVPanel(self.notebook_library, self.data)
+
         self.notebook_library.AddPage(self.tree_tab, 'Tree')
+        self.notebook_library.AddPage(self.olv_panel, 'List')
 
         left_box = wx.BoxSizer(wx.VERTICAL)
         left_box.Add(self.notebook_library, 1, wx.EXPAND | wx.ALL, 5)
@@ -116,13 +120,13 @@ class MainFrame(wx.Frame):
 
     def _get_selected_source_path(self):
         sources = self.data.database.select_all_source_folders()
-        selected = self.tree_tab.chooser.GetSelection()
+        selected = self.tree_tab.source_choice.GetSelection()
         return Path(sources[selected][3])
 
     def _on_refresh_tree(self, event=None):
         self._disable_frame()
         self._blank_source_details()
-        self.tree_tab.tree.make_from_path(self._get_selected_source_path(), self.tree_tab.chooser.GetSelection())
+        self.tree_tab.tree.make_from_path(self._get_selected_source_path(), self.tree_tab.source_choice.GetSelection())
         self._update_source_details()
         self._enable_frame()
 
@@ -130,7 +134,7 @@ class MainFrame(wx.Frame):
         self._disable_frame()
         self._blank_source_details()
 
-        self.tree_tab.tree.make_from_db(self.tree_tab.chooser.GetSelection())
+        self.tree_tab.tree.make_from_db(self.tree_tab.source_choice.GetSelection())
 
         self._update_source_details()
         self._enable_frame()

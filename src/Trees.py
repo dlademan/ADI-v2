@@ -76,7 +76,7 @@ class FolderTree(wx.TreeCtrl):
                 self.size += FileHelpers.get_file_size(sub_path)
 
                 asset = self.data_handler.database.create_asset(sub_path, source_index)
-                # self.data_handler.database.create_file_paths(asset.idn)
+                self.data_handler.database.create_file_paths(asset.idn)
                 next_data = {'id': asset.idn,
                              'type': 'asset',
                              'path': sub_path}
@@ -125,7 +125,6 @@ class FolderTree(wx.TreeCtrl):
         assets = self.data_handler.database.select_all_assets_by_parent(source_index)
 
         for asset in assets:
-            asset = Asset(*asset)
             self.zip_count += 1
             self.size += asset.size_raw
 
@@ -135,7 +134,9 @@ class FolderTree(wx.TreeCtrl):
                           'type': 'asset',
                           'path': asset.path}
 
-            node_list[str(asset.path) + str(asset.filename)] = self.AppendItem(parent_node, asset.product_name, data=asset_data, image=1)
+            asset_key = str(asset.path) + str(asset.filename)
+
+            node_list[asset_key] = self.AppendItem(parent_node, asset.product_name, data=asset_data, image=1)
 
         for node in node_list.values():
             if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:

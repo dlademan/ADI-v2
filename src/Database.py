@@ -159,10 +159,16 @@ class DatabaseHandler:
         try:
             cursor = self.connection.cursor()
             cursor.execute('SELECT * FROM assets WHERE parent=?', (parent,))
-            return cursor.fetchall()
+            rows = cursor.fetchall()
         except sqlError as e:
             logging.critical(e)
             return None
+
+        assets = []
+        for row in rows:
+            assets.append(Asset(*row))
+
+        return assets
 
     def create_folder(self, path: Path, parent: int, source: bool = False, ):
 
