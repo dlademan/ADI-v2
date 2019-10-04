@@ -1,4 +1,4 @@
-from Objects.Folder import Folder
+from sqlObjects.Folder import Folder
 from pathlib import Path
 from Handlers.Data import DataHandler
 from Helpers import FileHelpers

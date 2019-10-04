@@ -58,8 +58,8 @@ class OLVPanel(wx.Panel):
         return choices
 
     def on_source_change(self, event: wx.Event = None):
-        selection = self.source_choice.GetSelection()
-        idn = self.idns[selection]
+        selection: int = self.source_choice.GetSelection()
+        idn: int = self.idns[selection]
         source = self.data.database.select_source_by_idn(idn)
 
         if selection == 0:

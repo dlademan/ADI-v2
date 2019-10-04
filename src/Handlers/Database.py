@@ -5,9 +5,9 @@ from pathlib import Path
 from zipfile import ZipFile, BadZipFile
 
 from Helpers import FileHelpers, FolderHelpers
-from Objects.Asset import Asset
-from Objects.Folder import Folder
-from Objects.Source import Source
+from sqlObjects.Asset import Asset
+from sqlObjects.Folder import Folder
+from sqlObjects.Source import Source
 
 
 class DatabaseHandler:

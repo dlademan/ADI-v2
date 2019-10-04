@@ -2,7 +2,7 @@ import wx
 import logging
 from pathlib import Path
 
-from MiscWXs.Trees import FolderTree
+from wxObjects.Trees import FolderTree
 from Handlers.Data import DataHandler
 from Helpers import FileHelpers
 

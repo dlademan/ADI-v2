@@ -1,4 +1,4 @@
-from Frames.MainFrame import MainFrame
+from wxObjects._MainFrame import MainFrame
 import wx.adv
 
 
