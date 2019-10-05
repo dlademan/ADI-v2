@@ -18,6 +18,11 @@ class OLVPanel(wx.Panel):
         self.data = data
         self.idns = [0]
 
+        self._create_widgets()
+        self._create_boxes()
+        self._create_binds()
+
+    def _create_widgets(self):
         self.source_choice = wx.Choice(self, choices=self._get_choices())
         self.source_choice.SetSelection(0)
 
@@ -27,8 +32,8 @@ class OLVPanel(wx.Panel):
         zip_size_column = ColumnDefn("Zip Size", "right", 90, "get_size")
         installed_column = ColumnDefn("Installed", "right", 90, "get_installed")
 
-        self.columns = [idn_column, sku_column, product_name_column, zip_size_column, installed_column]
-        assets = data.database.select_all_assets()
+        self.columns = [sku_column, product_name_column, zip_size_column, installed_column]
+        assets = self.data.database.select_all_assets()
 
         self.olv = ObjectListView(parent=self, style=wx.LC_REPORT | wx.SUNKEN_BORDER,
                                   useAlternateBackColors=True)
@@ -40,11 +45,13 @@ class OLVPanel(wx.Panel):
         self.olv.evenRowsBackColor = wx.Colour(240, 240, 240)
         self.olv._FormatAllRows()
 
+    def _create_boxes(self):
         main_box = wx.BoxSizer(wx.VERTICAL)
         main_box.Add(self.source_choice, 0, wx.EXPAND | wx.ALL, 5)
         main_box.Add(self.olv, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(main_box)
 
+    def _create_binds(self):
         self.source_choice.Bind(wx.EVT_CHOICE, self.on_source_change)
 
     def _get_choices(self):

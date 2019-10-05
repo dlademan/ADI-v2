@@ -51,6 +51,7 @@ class TreePanel(wx.Panel):
     def _create_boxes(self):
         archive_box = wx.BoxSizer()
         archive_box.Add(self.button_refresh, 0, wx.EXPAND | wx.ALL)
+        archive_box.Add(10, 0, 0)
         archive_box.Add(self.source_choice, 1, wx.EXPAND | wx.ALL)
 
         details_box = wx.BoxSizer()

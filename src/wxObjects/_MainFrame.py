@@ -2,10 +2,13 @@ import wx
 import logging
 
 from Handlers.Data import DataHandler
+
 from wxObjects.TreePanel import TreePanel
 from wxObjects.OLVPanel import OLVPanel
 from wxObjects.MenuBar import MenuBar
 from wxObjects.DetailsPanel import DetailsPanel
+
+from sqlObjects.Asset import Asset
 
 
 class MainFrame(wx.Frame):
@@ -31,13 +34,10 @@ class MainFrame(wx.Frame):
 
         self.main_splitter = None
         self.notebook_library = None
-        self.tree_tab = None
+        self.tree_panel = None
         self.olv_panel = None
 
         self._create_body()
-
-        self.Bind(wx.EVT_CLOSE, self._on_close)
-
         self.Show()
 
     def _enable_frame(self, event=None):
@@ -80,10 +80,10 @@ class MainFrame(wx.Frame):
         left_panel = wx.Panel(self.main_splitter)
 
         self.notebook_library = wx.Notebook(left_panel)
-        self.tree_tab: TreePanel = TreePanel(self.notebook_library, self.data)
+        self.tree_panel: TreePanel = TreePanel(self.notebook_library, self.data)
         self.olv_panel: OLVPanel = OLVPanel(self.notebook_library, self.data)
 
-        self.notebook_library.AddPage(self.tree_tab, 'Tree')
+        self.notebook_library.AddPage(self.tree_panel, 'Tree')
         self.notebook_library.AddPage(self.olv_panel, 'List')
 
         left_box = wx.BoxSizer(wx.VERTICAL)
@@ -98,22 +98,24 @@ class MainFrame(wx.Frame):
         return self.details_panel
 
     def _binds(self):
-        self.Bind(wx.EVT_MENU, self.tree_tab.on_refresh_tree, self.menu_bar.menus['file_refresh'])
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.Bind(wx.EVT_MENU, self.tree_panel.on_refresh_tree, self.menu_bar.menus['file_refresh'])
         self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
         self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
-        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed, self.tree_tab.tree)
+        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_tree_selection_change, self.tree_panel.tree)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_olv_selection_change, self.olv_panel.olv)
 
     def _get_selected_source_title(self):
-        selection = self.tree_tab.source_choice.GetSelection()
-        title = self.tree_tab.titles[selection]
+        selection = self.tree_panel.source_choice.GetSelection()
+        title = self.tree_panel.titles[selection]
         source = self.data.database.select_source_by_title(title)
         return source
 
     def _on_show_config_frame(self, event=None):
         logging.debug('Showing config_frame')
 
-    def _on_selection_changed(self, event):
-        data = self.tree_tab.tree.GetItemData(event.GetItem())
+    def _on_tree_selection_change(self, event):
+        data = self.tree_panel.tree.GetItemData(event.GetItem())
 
         if data['type'] == 'asset':
             asset = self.data.database.select_asset_by_id(data['id'])
@@ -121,3 +123,7 @@ class MainFrame(wx.Frame):
         elif data['type'] == 'folder':
             folder = self.data.database.select_folder_by_id(data['id'])
             self.details_panel.update_values_for_folder(folder)
+
+    def _on_olv_selection_change(self, event=None):
+        asset: Asset = self.olv_panel.olv.GetSelectedObject()
+        self.details_panel.update_values_for_asset(asset)
