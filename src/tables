@@ -48,5 +48,5 @@ CREATE TABLE IF NOT EXISTS sources (
     path text NOT NULL,
     file_count integer NOT NULL,
     size_raw integer NOT NULL,
-    UNIQUE (id, title)
+    UNIQUE (id, path)
 );

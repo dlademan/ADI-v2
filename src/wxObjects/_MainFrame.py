@@ -5,6 +5,7 @@ from Handlers.Data import DataHandler
 from wxObjects.TreePanel import TreePanel
 from wxObjects.OLVPanel import OLVPanel
 from wxObjects.MenuBar import MenuBar
+from wxObjects.DetailsPanel import DetailsPanel
 
 
 class MainFrame(wx.Frame):
@@ -60,24 +61,20 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
 
         self._create_main_splitter()
+        self._binds()
         self._set_pos_and_size()
 
     def _create_main_splitter(self):
         logging.info("Creating main_splitter")
 
         self.main_splitter = wx.SplitterWindow(self)
-        self.main_splitter.SetSashGravity(0.55)
+        self.main_splitter.SetSashGravity(0.5)
         self.main_splitter.SetSashInvisible()
 
         left_panel = self._create_left_panel()
         right_panel = self._create_right_panel()
 
         self.main_splitter.SplitVertically(left_panel, right_panel)
-
-        # Binds #########################
-        self.Bind(wx.EVT_MENU, self.tree_tab.on_refresh_tree, self.menu_bar.menus['file_refresh'])
-        self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
-        self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
 
     def _create_left_panel(self):
         left_panel = wx.Panel(self.main_splitter)
@@ -96,9 +93,15 @@ class MainFrame(wx.Frame):
         return left_panel
 
     def _create_right_panel(self):
-        right_panel = wx.Panel(self.main_splitter)
+        self.details_panel = DetailsPanel(self.main_splitter, self.data)
 
-        return right_panel
+        return self.details_panel
+
+    def _binds(self):
+        self.Bind(wx.EVT_MENU, self.tree_tab.on_refresh_tree, self.menu_bar.menus['file_refresh'])
+        self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
+        self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
+        self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed, self.tree_tab.tree)
 
     def _get_selected_source_title(self):
         selection = self.tree_tab.source_choice.GetSelection()
@@ -108,3 +111,13 @@ class MainFrame(wx.Frame):
 
     def _on_show_config_frame(self, event=None):
         logging.debug('Showing config_frame')
+
+    def _on_selection_changed(self, event):
+        data = self.tree_tab.tree.GetItemData(event.GetItem())
+
+        if data['type'] == 'asset':
+            asset = self.data.database.select_asset_by_id(data['id'])
+            self.details_panel.update_values_for_asset(asset)
+        elif data['type'] == 'folder':
+            folder = self.data.database.select_folder_by_id(data['id'])
+            self.details_panel.update_values_for_folder(folder)

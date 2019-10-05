@@ -95,6 +95,11 @@ class DatabaseHandler:
 
         return Asset(cursor.lastrowid, *asset)
 
+    def select_asset_by_id(self, asset_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE id=?', (asset_id,))
+        return Asset(*cursor.fetchone())
+
     def find_asset_by_zip(self, path: Path):
         logging.debug('Trying to find asset in database from: ' + path.name)
 
