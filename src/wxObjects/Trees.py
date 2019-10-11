@@ -1,10 +1,11 @@
-from sqlObjects.Folder import Folder
-from pathlib import Path
-from Handlers.Data import DataHandler
-from Helpers import FileHelpers
+import logging
 
 import wx
-import logging
+from Handlers.Data import DataHandler
+from Helpers import FileHelpers
+from sqlObjects.Folder import Folder
+from sqlObjects.Source import Source
+from sqlObjects.Asset import Asset
 
 
 class FolderTree(wx.TreeCtrl):
@@ -28,15 +29,15 @@ class FolderTree(wx.TreeCtrl):
         self.zip_count = 0
         self.size = 0
 
-        source = self.data.database.select_source_by_title(source_title)
+        source: Source = self.data.database.select_source_by_title(source_title)
 
         logging.info("Making tree by path with: " + str(source.path))
-        root_data = {'id': source.idn,
+        root_data = {'id': source.id_,
                      'type': 'folder',
                      'path': source.path}
 
         self.root_node = self.AddRoot(source.path.name, data=root_data)
-        node_list = self.populate(self.root_node, root_data, source.idn)
+        node_list = self.populate(self.root_node, root_data, source.id_)
 
         for node in node_list:
             if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:
@@ -53,7 +54,7 @@ class FolderTree(wx.TreeCtrl):
 
             if sub_path.is_dir():
                 folder: Folder = self.data.database.create_folder(sub_path, source_id)
-                next_data = {'id': folder.idn,
+                next_data = {'id': folder.id_,
                              'type': 'folder',
                              'path': folder.path}
 
@@ -67,9 +68,9 @@ class FolderTree(wx.TreeCtrl):
                 self.zip_count += 1
                 self.size += FileHelpers.get_file_size(sub_path)
 
-                asset = self.data.database.create_asset(sub_path, source_id)
-                self.data.database.create_file_paths(asset.idn)
-                next_data = {'id': asset.idn,
+                asset: Asset = self.data.database.create_asset(sub_path, source_id)
+                self.data.database.create_all_file_paths_for_asset_id(asset.id_)
+                next_data = {'id': asset.id_,
                              'type': 'asset',
                              'path': sub_path}
 
@@ -106,7 +107,7 @@ class FolderTree(wx.TreeCtrl):
 
             parent_key = str(folder.path.parent)
             parent_node = node_list[parent_key]
-            folder_data = {'id': folder.idn,
+            folder_data = {'id': folder.id_,
                            'type': 'folder',
                            'path': folder.path}
 
@@ -140,14 +141,22 @@ class FolderTree(wx.TreeCtrl):
         is_dir1 = self.GetItemData(item1)['path'].is_dir()
         is_dir2 = self.GetItemData(item2)['path'].is_dir()
 
-        if (is_dir1 and is_dir2) and text1 < text2: return -1
-        elif (is_dir1 and is_dir2) and text1 == text2: return 0
-        elif is_dir1 and is_dir2: return 1
-        elif is_dir1 and not is_dir2: return -1
-        elif not is_dir1 and is_dir2: return 1
-        elif text1 < text2: return -1
-        elif text1 == text2: return 0
-        else: return 1
+        if (is_dir1 and is_dir2) and text1 < text2:
+            return -1
+        elif (is_dir1 and is_dir2) and text1 == text2:
+            return 0
+        elif is_dir1 and is_dir2:
+            return 1
+        elif is_dir1 and not is_dir2:
+            return -1
+        elif not is_dir1 and is_dir2:
+            return 1
+        elif text1 < text2:
+            return -1
+        elif text1 == text2:
+            return 0
+        else:
+            return 1
 
     @staticmethod
     def create_image_list():

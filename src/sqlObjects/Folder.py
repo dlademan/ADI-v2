@@ -4,11 +4,11 @@ from pathlib import Path
 class Folder:
 
     def __init__(self,
-                 idn: int, source_id: int,
+                 id_: int, source_id: int,
                  path: str, title: str,
                  file_count: int, size_raw: int):
 
-        self.idn = idn
+        self.id_ = id_
         self.path = Path(path)
         self.title = title
         self.file_count = file_count

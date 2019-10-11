@@ -3,12 +3,12 @@ from pathlib import Path
 
 class Asset:
 
-    def __init__(self, idn: int, source_id: int,
+    def __init__(self, id_: int, source_id: int,
                  sku: int, product_name: str,
                  path: str, filename: str,
                  size_raw: int, installed: bool):
 
-        self.idn = idn
+        self.id_ = id_
         self.source_id = source_id
         self.sku = sku
         self.product_name = product_name
@@ -16,6 +16,8 @@ class Asset:
         self.filename = filename
         self.size_raw = size_raw
         self.installed = installed
+
+        self.zip = self.path / self.filename
 
     def get_size(self, places=2):
 

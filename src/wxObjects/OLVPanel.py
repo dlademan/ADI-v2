@@ -60,7 +60,7 @@ class OLVPanel(wx.Panel):
 
         for source in sources:
             choices.append(str(source.path))
-            self.idns.append(source.idn)
+            self.idns.append(source.id_)
 
         return choices
 

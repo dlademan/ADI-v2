@@ -34,7 +34,6 @@ class ConfigHandler:
             return
 
         # load Options
-        # todo allow multiple install paths and multiple archive paths
         self.clear_queue: bool = bool(self._config['Options']['clear_queue'])
         self.expand: bool = bool(self._config['Options']['expand'])
         self.close_dialog: bool = bool(self._config['Options']['close_dialog'])

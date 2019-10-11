@@ -233,20 +233,11 @@ class DatabaseHandler:
 
     def create_all_file_paths(self, asset_ids: list):
         for asset_id in asset_ids:
-            self.create_file_paths(asset_id)
+            self.create_all_file_paths_for_asset_id(asset_id)
 
-    def create_file_paths(self, asset_id: int):
+    def create_all_file_paths_for_asset_id(self, asset_id: int):
         results = self.select_file_paths_by_id(asset_id)
-
-        cursor = self.connection.cursor()
-        cursor.execute('SELECT * FROM assets WHERE id=?', (asset_id,))
-        asset = cursor.fetchone()
-
-        if asset is None:
-            logging.warning('No asset found with id: ' + str(asset_id))
-            return
-        else:
-            asset = Asset(*asset)
+        asset = self.select_asset_by_id(asset_id)
 
         asset_path = Path(asset.path) / Path(asset.filename)
 
@@ -268,9 +259,22 @@ class DatabaseHandler:
         if len(results) == len(file_paths): return
 
         try:
-            logging.debug('Creating file_paths for: ' + asset_path.name)
+            logging.debug('Creating file_path for: ' + asset_path.name)
             cursor = self.connection.cursor()
             cursor.executemany('INSERT INTO file_paths VALUES(?,?);', file_paths)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
+
+    def create_single_file_path_for_asset_id(self, asset_id: int, file_path: Path):
+        asset = self.select_asset_by_id(asset_id)
+
+        value = (asset_id, file_path)
+
+        try:
+            logging.debug('Creating file_path for: ' + asset.filename)
+            cursor = self.connection.cursor()
+            cursor.execute('INSERT INTO file_paths VALUES(?,?);', value)
             self.connection.commit()
         except sqlError as e:
             logging.critical(e)

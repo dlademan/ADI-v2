@@ -18,7 +18,7 @@ class DetailsPanel(wx.Panel):
         wx.Panel.__init__(self, parent=parent)
         self.data = data
         self.labels = 0
-        self.outer_padding = 20
+        self.outer_padding = 5
         self.inner_padding = 10
 
         self._create_widgets()
@@ -31,11 +31,11 @@ class DetailsPanel(wx.Panel):
         self.title_label = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
         self.title_label.SetFont(font_title)
 
-        self.label_1 = wx.StaticText(self, label='             ', style=wx.ALIGN_RIGHT)
-        self.label_2 = wx.StaticText(self, label='             ', style=wx.ALIGN_RIGHT)
-        self.label_3 = wx.StaticText(self, label='             ', style=wx.ALIGN_RIGHT)
-        self.label_4 = wx.StaticText(self, label='             ', style=wx.ALIGN_RIGHT)
-        self.label_5 = wx.StaticText(self, label='             ', style=wx.ALIGN_RIGHT)
+        self.label_1 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
+        self.label_2 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
+        self.label_3 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
+        self.label_4 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
+        self.label_5 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
 
         self.label_2.SetFont(font_data)
         self.label_1.SetFont(font_data)
@@ -55,6 +55,10 @@ class DetailsPanel(wx.Panel):
         self.value_4.SetFont(font_data)
         self.value_5.SetFont(font_data)
 
+        self.action_buttons = []
+        for label in ['Install', 'Queue', 'Open Zip']:
+            self.action_buttons.append(wx.Button(self, label=label))
+
     def _create_boxes(self):
         name_box = wx.BoxSizer()
         name_box.Add(self.title_label, 0, wx.EXPAND | wx.ALL)
@@ -73,33 +77,40 @@ class DetailsPanel(wx.Panel):
         values_box.Add(self.value_4, 0, wx.EXPAND | wx.ALL, 5)
         values_box.Add(self.value_5, 0, wx.EXPAND | wx.ALL, 5)
 
+        buttons_box = wx.BoxSizer(wx.VERTICAL)
+        for i, button in enumerate(self.action_buttons):
+            buttons_box.Add(button, 1, wx.EXPAND | wx.ALL, 3)
+            if i is not len(self.action_buttons):
+                buttons_box.Add(0, 16, 0)
+
         data_box = wx.BoxSizer(wx.HORIZONTAL)
-        data_box.Add(self.inner_padding, 0, 0)
-        data_box.Add(labels_box, 1, wx.EXPAND | wx.ALL, 5)
-        data_box.Add(values_box, 1, wx.EXPAND | wx.ALL, 5)
+        # data_box.Add(self.inner_padding, 0, 0)
+        data_box.Add(buttons_box, 0, wx.ALL, 5)
+        data_box.Add(labels_box, 0, wx.ALL, 5)
+        data_box.Add(values_box, 1, wx.ALL, 5)
 
         details_box = wx.BoxSizer(wx.VERTICAL)
         details_box.Add(0, self.outer_padding, 0)
         details_box.Add(name_box, 0, wx.ALL, 5)
-        details_box.Add(0, self.inner_padding, 0)
+        # details_box.Add(0, self.inner_padding, 0)
         details_box.Add(data_box, 0, wx.ALL, 5)
 
-        main_box = wx.BoxSizer(wx.VERTICAL)
-        main_box.Add(details_box, 0, wx.EXPAND | wx.ALL, 5)
+        main_box = wx.BoxSizer()
+        main_box.Add(details_box, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(main_box)
 
     def _update_labels_for_asset(self):
-        self.label_1.SetLabel('Directory:')
-        self.label_2.SetLabel('Filename:')
-        self.label_3.SetLabel('SKU:')
-        self.label_4.SetLabel('Size:')
+        self.label_1.SetLabel('Size:')
+        self.label_2.SetLabel('Path:')
+        self.label_3.SetLabel('Filename:')
+        self.label_4.SetLabel('SKU:')
         self.label_5.SetLabel('Installed:')
 
     def _update_labels_for_folder(self):
-        self.label_1.SetLabel('Directory:')
-        self.label_2.SetLabel('')
+        self.label_1.SetLabel('Size:')
+        self.label_2.SetLabel('Path:')
         self.label_3.SetLabel('Zip Count:')
-        self.label_4.SetLabel('Size:')
+        self.label_4.SetLabel('')
         self.label_5.SetLabel('')
 
     def update_values_for_asset(self, asset: Asset):
@@ -108,15 +119,14 @@ class DetailsPanel(wx.Panel):
             self.labels = 'asset'
 
         source: Source = self.data.database.select_source_by_idn(asset.source_id)
-
-        source_name = source.path.name
         path = str(asset.path)[len(str(source.path))-len(source.path.name):]
 
         self.title_label.SetLabel(asset.product_name)
-        self.value_1.SetLabel(path)
-        self.value_2.SetLabel(asset.filename)
-        self.value_3.SetLabel(str(asset.sku))
-        self.value_4.SetLabel(asset.get_size())
+        self.value_1.SetLabel(asset.get_size())
+        self.value_2.SetLabel(path)
+        self.value_3.SetLabel(asset.filename)
+        self.value_3.SetToolTip(asset.filename)
+        self.value_4.SetLabel(str(asset.sku))
         self.value_5.SetLabel(asset.get_installed())
 
     def update_values_for_folder(self, folder: Folder):
@@ -125,13 +135,11 @@ class DetailsPanel(wx.Panel):
             self.labels = 'folder'
 
         source: Source = self.data.database.select_source_by_idn(folder.source_id)
-
-        source_name = source.path.name
         path = str(folder.path)[len(str(source.path))-len(source.path.name):]
 
         self.title_label.SetLabel(folder.title)
-        self.value_1.SetLabel(path)
-        self.value_2.SetLabel('')
+        self.value_1.SetLabel(folder.get_size())
+        self.value_2.SetLabel(path)
         self.value_3.SetLabel(str(folder.file_count))
-        self.value_4.SetLabel(folder.get_size())
+        self.value_4.SetLabel('')
         self.value_5.SetLabel('')

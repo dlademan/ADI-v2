@@ -105,6 +105,16 @@ class FileHelpers:
     def get_file_size(path: Path):
         return os.path.getsize(str(path))
 
+    @staticmethod
+    def clean_path(path):
+        if path[:8] == 'Content/':
+            path = path[8:]
+        elif path[:11] == 'My Library/':
+            path = path[11:]
+        elif path[:19] == 'My DAZ 3D Library/':
+            path = path[19:]
+        return path
+
 
 class FolderHelpers:
 
@@ -165,3 +175,16 @@ class FolderHelpers:
             return Path(os.path.expanduser('~/Studio3D/DazStudio/InstallManager/Download/'))
         else:  # linux
             return Path(os.path.expanduser('~/Daz3D Zips/'))
+
+    @staticmethod
+    def remove_empty_dirs(path):
+        for root, dir_names, filenames in os.walk(path, topdown=False):
+            for dir_name in dir_names:
+                path = os.path.join(root, dir_name)
+                children = len(os.listdir(path))
+
+                if children == 0:
+                    try:
+                        os.rmdir(path)
+                    except OSError as e:
+                        logging.error(e)
