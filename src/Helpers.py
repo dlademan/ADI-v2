@@ -1,11 +1,14 @@
-import os
-import re
 import hashlib
 import logging
+import os
+import re
+import subprocess
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
-from zipfile import ZipFile, BadZipFile
 from platform import system
+from zipfile import ZipFile, BadZipFile
+
+import wx
 
 
 class FileHelpers:
@@ -106,7 +109,7 @@ class FileHelpers:
         return os.path.getsize(str(path))
 
     @staticmethod
-    def clean_path(path):
+    def clean_path(path: str):
         if path[:8] == 'Content/':
             path = path[8:]
         elif path[:11] == 'My Library/':
@@ -114,6 +117,10 @@ class FileHelpers:
         elif path[:19] == 'My DAZ 3D Library/':
             path = path[19:]
         return path
+
+    @staticmethod
+    def open_location(path: Path):
+        subprocess.Popen(r'explorer /select, ' + str(path))
 
 
 class FolderHelpers:
@@ -177,14 +184,29 @@ class FolderHelpers:
             return Path(os.path.expanduser('~/Daz3D Zips/'))
 
     @staticmethod
-    def remove_empty_dirs(path):
-        for root, dir_names, filenames in os.walk(path, topdown=False):
+    def delete_empty_dirs(path):
+        for root, dir_names, file_names in os.walk(path, topdown=False):
             for dir_name in dir_names:
                 path = os.path.join(root, dir_name)
-                children = len(os.listdir(path))
 
-                if children == 0:
-                    try:
-                        os.rmdir(path)
-                    except OSError as e:
-                        logging.error(e)
+                if len(os.listdir(path)) == 0:
+                    FolderHelpers.delete_dir(path)
+
+    @staticmethod
+    def delete_dir(path):
+        try:
+            os.rmdir(path)
+        except OSError as e:
+            logging.error(e)
+
+    @staticmethod
+    def open_location(path: Path):
+        subprocess.Popen(r'explorer ' + str(path))
+
+class wxHelpers:
+
+    @staticmethod
+    def create_menu_option(self, parent_menu, label, method, *passed_args):
+        menu_item = parent_menu.Append(-1, label)
+        wrapper = lambda event: method(*passed_args)
+        self.Bind(wx.EVT_MENU, wrapper, menu_item)

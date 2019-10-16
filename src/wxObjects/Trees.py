@@ -31,7 +31,7 @@ class FolderTree(wx.TreeCtrl):
 
         source: Source = self.data.database.select_source_by_title(source_title)
 
-        logging.info("Making tree by path with: " + str(source.path))
+        logging.debug("Making tree by path with: " + str(source.path))
         root_data = {'id': source.id_,
                      'type': 'folder',
                      'path': source.path}
@@ -43,7 +43,7 @@ class FolderTree(wx.TreeCtrl):
             if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:
                 self.Delete(node)
 
-        logging.info("Finished making tree")
+        logging.debug("Finished making tree")
 
     def populate(self, current_node, current_data, source_id: int):
         node_list = []
@@ -69,7 +69,6 @@ class FolderTree(wx.TreeCtrl):
                 self.size += FileHelpers.get_file_size(sub_path)
 
                 asset: Asset = self.data.database.create_asset(sub_path, source_id)
-                self.data.database.create_all_file_paths_for_asset_id(asset.id_)
                 next_data = {'id': asset.id_,
                              'type': 'asset',
                              'path': sub_path}
@@ -91,12 +90,12 @@ class FolderTree(wx.TreeCtrl):
 
         logging.info('Making tree from database with source ' + source_title + ': ' + str(source.path))
 
-        folders = self.data.database.select_all_folders_by_source_id(source.idn)
+        folders = self.data.database.select_all_folders_by_source_id(source.id_)
         if folders is None or len(folders) < 1:
             logging.error('Database could not find any folders from source_index: ' + str(source_title))
             return
 
-        root_data = {'id': source.idn,
+        root_data = {'id': source.id_,
                      'type': 'folder',
                      'path': source.path}
 
@@ -113,7 +112,7 @@ class FolderTree(wx.TreeCtrl):
 
             node_list[str(folder.path)] = self.AppendItem(parent_node, folder.title, data=folder_data, image=0)
 
-        assets = self.data.database.select_all_assets_by_source_id(source.idn)
+        assets = self.data.database.select_all_assets_by_source_id(source.id_)
 
         for asset in assets:
             self.zip_count += 1
@@ -121,7 +120,7 @@ class FolderTree(wx.TreeCtrl):
 
             parent_key = str(asset.path)
             parent_node = node_list[parent_key]
-            asset_data = {'id': asset.idn,
+            asset_data = {'id': asset.id_,
                           'type': 'asset',
                           'path': asset.path}
 

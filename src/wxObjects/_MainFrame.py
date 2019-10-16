@@ -33,6 +33,8 @@ class MainFrame(wx.Frame):
             logging.critical('ADI Has experienced a critical error during data initialization and must exit')
             return
 
+        logging.info('------------------- ADI Started')
+
         self.main_splitter = None
         self.notebook_library = None
         self.tree_panel = None
@@ -51,6 +53,7 @@ class MainFrame(wx.Frame):
         self.data.close(position=self.GetPosition().Get(),
                         size=self.GetSize().Get())
         event.Skip()
+        logging.info('-------------------- ADI Closed')
         self.Destroy()
 
     def _set_pos_and_size(self):
@@ -58,15 +61,17 @@ class MainFrame(wx.Frame):
         self.SetSize(wx.Size(*self.data.config.win_size))
 
     def _create_body(self):
+        logging.debug('Creating ADI main frame')
         self.menu_bar = MenuBar()
         self.SetMenuBar(self.menu_bar)
-
         self._create_main_splitter()
+        logging.debug('Finished ADI main frame')
+
         self._binds()
         self._set_pos_and_size()
 
     def _create_main_splitter(self):
-        logging.info("Creating main_splitter")
+        logging.debug("Creating main_splitter")
 
         self.main_splitter = wx.SplitterWindow(self)
         self.main_splitter.SetSashGravity(0.5)
@@ -75,6 +80,7 @@ class MainFrame(wx.Frame):
         self.details_panel: DetailsPanel = DetailsPanel(self.main_splitter, self.data)
 
         self.main_splitter.SplitVertically(self.notebook_panel, self.details_panel)
+        logging.debug("Finished main_splitter")
 
     def _binds(self):
         # Main Frame Binds #############
@@ -83,6 +89,9 @@ class MainFrame(wx.Frame):
         # Menu Bar Binds ###############
         self.Bind(wx.EVT_MENU, self.notebook_panel.tree_panel.on_refresh_tree, self.menu_bar.menus['file_refresh'])
         self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
+
+        self.Bind(wx.EVT_MENU, self._on_import_meta, self.menu_bar.menus['library_import_meta'])
+
         self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
 
         # Tree Binds ###################
@@ -99,6 +108,15 @@ class MainFrame(wx.Frame):
 
     def _on_show_config_frame(self, event=None):
         logging.debug('Showing config_frame')
+
+    def _on_import_meta(self, event=None):
+        metas = self.data.database.select_metas_by_imported(False)
+
+        self.data.write_meta_import_script(metas)
+        self.data.execute_meta_import_script()
+
+        for meta in metas:
+            self.data.database.update_metas_imported_to(meta.asset_id, True)
 
     def _on_tree_selection_change(self, event):
         data = self.notebook_panel.tree_panel.tree.GetItemData(event.GetItem())

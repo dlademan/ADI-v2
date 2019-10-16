@@ -17,7 +17,7 @@ class Asset:
         self.size_raw = size_raw
         self.installed = installed
 
-        self.zip = self.path / self.filename
+        self.zip_path = self.path / self.filename
 
     def get_size(self, places=2):
 
@@ -35,3 +35,13 @@ class Asset:
     def get_installed(self):
         text = 'Not installed' if not self.installed else 'Installed'
         return text
+
+    def get_sql_tuple(self):
+        return (self.id_,
+                self.source_id,
+                self.sku,
+                self.product_name,
+                str(self.path),
+                self.filename,
+                self.size_raw,
+                self.installed)

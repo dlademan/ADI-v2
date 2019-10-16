@@ -2,8 +2,10 @@ import wx
 from pathlib import Path
 
 from wxObjects.Trees import FolderTree
+from wxObjects.TreeMenu import TreeMenu
+from sqlObjects.Asset import Asset
 from Handlers.Data import DataHandler
-from Helpers import FileHelpers
+from Helpers import FileHelpers, wxHelpers
 
 
 class TreePanel(wx.Panel):
@@ -35,7 +37,7 @@ class TreePanel(wx.Panel):
         font_data = wx.Font(wx.FontInfo(12))
 
         # Create Items ###################
-        self.source_choice = wx.Choice(self, choices=self._get_choices(self.data))
+        self.source_choice = wx.Choice(self, choices=self._get_choices())
         self.source_choice.SetSelection(0)
 
         self.button_refresh = wx.Button(self, label='Refresh', style=wx.BORDER_NONE)
@@ -73,6 +75,7 @@ class TreePanel(wx.Panel):
     def _bind_widgets(self):
         self.button_refresh.Bind(wx.EVT_BUTTON, self.on_refresh_tree)
         self.source_choice.Bind(wx.EVT_CHOICE, self._on_source_change)
+        self.tree.Bind(wx.EVT_TREE_ITEM_MENU, self._on_tree_item_menu)
 
     def _blank_source_details(self):
         self.count_label.SetLabel('')
@@ -88,8 +91,8 @@ class TreePanel(wx.Panel):
         self.count_label.SetLabel(zips_text)
         self.size_label.SetLabel(size_text)
 
-    def _get_choices(self, data: DataHandler):
-        sources = data.sources.values()
+    def _get_choices(self):
+        sources = self.data.sources.values()
         choices = []
 
         for source in sources:
@@ -111,6 +114,13 @@ class TreePanel(wx.Panel):
         selection = self.source_choice.GetSelection()
         self.tree.make_from_db(self.titles[selection])
         self._update_source_details()
+
+    def _on_tree_item_menu(self, event=None):
+        data = self.tree.GetItemData(event.GetItem())
+        context_menu = TreeMenu(self.data, data)
+        self.PopupMenu(context_menu, event.GetPoint())
+
+
 
 
 

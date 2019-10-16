@@ -18,10 +18,8 @@ class ConfigHandler:
 
         self._init_logger()
 
-        if self.debug:
-            self.config_path = self.user_folder_path / 'debug.ini'
-        else:
-            self.config_path = self.user_folder_path / 'config.ini'
+        self.config_path = self.user_folder_path / 'config.ini'
+        self.import_script_path = self.user_folder_path / 'import.dsa'
 
         if not self.config_path.exists(): self._create_config()
 
@@ -60,10 +58,10 @@ class ConfigHandler:
         self._config['Options']['detect'] = False
 
         self._config['Archives'] = {}
-        self._config['Archives']['daz_default'] = FolderHelpers.get_default_archive_path()
+        self._config['Archives']['default_archive'] = FolderHelpers.get_default_archive_path()
 
         self._config['Libraries'] = {}
-        self._config['Libraries']['daz_default'] = FolderHelpers.get_default_library_path()
+        self._config['Libraries']['default_library'] = FolderHelpers.get_default_library_path()
 
         self._config['Dimensions'] = {}
         self._config['Dimensions']['win_size'] = (1300, 800)
@@ -94,7 +92,7 @@ class ConfigHandler:
         self._config['Dimensions']['first'] = self.first
         self._config['Dimensions']['version'] = self.version
 
-        logging.info('Saving config to: ' + str(self.config_path.name))
+        logging.debug('Saving config to: ' + str(self.config_path.name))
         self._config.write()
 
     def _init_logger(self):
@@ -125,4 +123,4 @@ class ConfigHandler:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        logger.info('Logger initialized')
+        logger.debug('Logger initialized')

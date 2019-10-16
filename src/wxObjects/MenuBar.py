@@ -9,7 +9,7 @@ class MenuBar(wx.MenuBar):
 
         self.menus = {}
 
-        logging.info("Creating menu_bar")
+        logging.debug("Creating menu_bar")
 
         ##### File Menu #################
         self.menus['file_menu'] = file_menu = wx.Menu()
@@ -21,6 +21,10 @@ class MenuBar(wx.MenuBar):
         file_menu.Append(file_quit)
 
         ##### Library Menu ###############
+        self.menus['library_menu'] = library_menu = wx.Menu()
+        self.menus['library_import_meta'] = library_import_meta = wx.MenuItem(file_menu, -1, '&Import Metadata')
+
+        library_menu.Append(library_import_meta)
 
         ##### View Menu ##################
         self.menus['view_menu'] = view_menu = wx.Menu()
@@ -29,7 +33,8 @@ class MenuBar(wx.MenuBar):
         view_menu.Append(view_settings)
 
         ##### Menu Bar ##################
-
         self.Append(file_menu, '&File')
-        # menu_bar.Append(lib_menu, '&Library')
+        self.Append(library_menu, '&Library')
         self.Append(view_menu, '&View')
+
+        logging.debug("Finished menu_bar")

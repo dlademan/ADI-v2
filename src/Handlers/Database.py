@@ -8,6 +8,7 @@ from Helpers import FileHelpers, FolderHelpers
 from sqlObjects.Asset import Asset
 from sqlObjects.Folder import Folder
 from sqlObjects.Source import Source
+from sqlObjects.Meta import Meta
 
 
 class DatabaseHandler:
@@ -27,7 +28,7 @@ class DatabaseHandler:
         connection = None
         try:
             connection = sqlite3.connect(str(self.path))
-            logging.info("Connection created to " + self.filename)
+            logging.debug("Connection created to " + self.filename)
             logging.debug("SQLite version: " + sqlite3.version)
         except sqlError as e:
             logging.critical(e)
@@ -59,6 +60,10 @@ class DatabaseHandler:
                 self._init_table("Table " + str(i), table)
         else:
             logging.critical("Error! Cannot create the database connection.")
+
+    def close(self):
+        logging.debug('Closing connection to database')
+        self.connection.close()
 
     def create_asset(self, path: Path, source_id: int):
 
@@ -118,12 +123,41 @@ class DatabaseHandler:
             logging.debug('Not Found: ' + path.name)
             return False, None
 
+    def update_asset_installed(self, installed: bool, asset_id: int = None):
+        asset = self.select_asset_by_id(asset_id)
+        sql = ''' 
+        UPDATE assets
+        SET installed = ?
+        WHERE id = ?
+        '''
+
+        values = (installed, asset_id)
+
+        try:
+            cursor = self.connection.cursor()
+            logging.debug('Asset: ' + asset.product_name)
+            logging.debug('Updating installed to: ' + str(installed))
+            cursor.execute(sql, values)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
+
     def select_all_assets(self):
         cursor = self.connection.cursor()
         cursor.execute('SELECT * FROM assets')
         rows = cursor.fetchall()
         assets = []
         for row in rows:
+            assets.append(Asset(*row))
+
+        return assets
+
+    def select_all_assets_by_installed(self, installed: bool):
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM assets WHERE installed=?', (installed,))
+        results = cursor.fetchall()
+        assets = []
+        for row in results:
             assets.append(Asset(*row))
 
         return assets
@@ -253,7 +287,7 @@ class DatabaseHandler:
         file_paths = []
         for info in info_list:
             if not info.is_dir():
-                file_path = (asset_id, info.filename)
+                file_path = (asset_id, FileHelpers.clean_path(info.filename))
                 file_paths.append(file_path)
 
         if len(results) == len(file_paths): return
@@ -267,12 +301,10 @@ class DatabaseHandler:
             logging.critical(e)
 
     def create_single_file_path_for_asset_id(self, asset_id: int, file_path: Path):
-        asset = self.select_asset_by_id(asset_id)
-
-        value = (asset_id, file_path)
+        value = (asset_id, str(file_path))
 
         try:
-            logging.debug('Creating file_path for: ' + asset.filename)
+            logging.debug('Creating file_path: ' + str(asset_id) + ', ' + str(file_path))
             cursor = self.connection.cursor()
             cursor.execute('INSERT INTO file_paths VALUES(?,?);', value)
             self.connection.commit()
@@ -348,6 +380,56 @@ class DatabaseHandler:
         else:
             return None
 
-    def close(self):
-        logging.info('Closing connection to database')
-        self.connection.close()
+    def create_meta(self, asset_id: int, product: str, imported: bool = False):
+        sql = ''' 
+        INSERT INTO metas(asset_id,path,imported) 
+        VALUES(?,?,?)
+        '''
+
+        meta = (asset_id, product, imported)
+
+        try:
+            cursor = self.connection.cursor()
+            logging.debug('Inserting \'' + product + '\' into metas table')
+            cursor.execute(sql, meta)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
+
+    def create_metas_for_all_installed(self):
+        assets = self.select_all_assets_by_installed(True)
+
+        # todo create this
+
+    def select_metas_by_imported(self, imported: bool = False):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute('SELECT * FROM metas WHERE imported=?', (imported,))
+            results = cursor.fetchall()
+        except sqlError as e:
+            logging.critical(e)
+            results = []
+
+        metas = []
+        for result in results:
+            metas.append(Meta(*result))
+
+        return metas
+
+    def update_metas_imported_to(self, asset_id: int, imported: bool):
+        asset = self.select_asset_by_id(asset_id)
+        sql = ''' 
+        UPDATE metas
+        SET imported = ?
+        WHERE asset_id = ?
+        '''
+
+        values = (imported, asset_id)
+
+        try:
+            cursor = self.connection.cursor()
+            logging.debug('Updating meta import status for ' + asset.product_name)
+            cursor.execute(sql, values)
+            self.connection.commit()
+        except sqlError as e:
+            logging.critical(e)
