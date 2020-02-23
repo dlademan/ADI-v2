@@ -2,27 +2,26 @@ import os
 import logging
 import shutil
 from pathlib import Path
-from zipfile import ZipFile, ZipInfo
+from zipfile import ZipFile
 
 from Handlers.Config import ConfigHandler
 from Handlers.Queue import QueueHandler
-from Handlers.Database import DatabaseHandler
+from SQLHandlers._SQLHandler import SQLHandler
 
-from sqlObjects.Asset import Asset
+from SQLClasses.Asset import Asset
 from Helpers import FileHelpers, FolderHelpers
 
 
-class DataHandler:
+class MainHandler:
 
     def __init__(self):
 
         self.config = ConfigHandler()
 
-        if self.config._config is None:
-            self.critical = True
+        if self.config.critical is True:
             return
 
-        self.database = DatabaseHandler()
+        self.sql_handler = SQLHandler()
         self.queue = QueueHandler()
 
         self.sources = self._create_sources()
@@ -30,12 +29,12 @@ class DataHandler:
 
     def close(self, position, size):
         self.config.save_config(position, size)
-        self.database.close()
+        self.sql_handler.close()
 
     def _create_sources(self):
         sources = {}
-        for title, source in self.config.archives.items():
-            sources[title] = self.database.create_source(title, Path(source))
+        for title, path in self.config.sources.items():
+            sources[title] = self.sql_handler.sources.create_source(Path(path))
 
         return sources
 
@@ -55,18 +54,18 @@ class DataHandler:
 
                 if absolute_path.suffix == '.dsx' and absolute_path.parent.name == 'Support':
                     # create meta in database for later
-                    self.database.create_meta(asset.id_, absolute_path.stem, False)
+                    self.sql_handler.metas.create_meta(asset.id_, absolute_path.stem, False)
 
                 try:
                     if not absolute_path.parent.exists():
                         absolute_path.parent.mkdir(parents=True)
                     with source, open(str(absolute_path), 'wb') as out: shutil.copyfileobj(source, out)
-                    self.database.create_single_file_path_for_asset_id(asset.id_, local_path)
+                    self.sql_handler.file_paths.create_single_file_path_for_asset_id(asset.id_, local_path)
                 except OSError as e:
                     logging.error('Error occurred during zip member extraction')
                     logging.error(e)
 
-        self.database.update_asset_installed(True, asset.id_)
+        self.sql_handler.assets.update_asset_installed(True, asset.id_)
 
         logging.info('Finished Install')
 
@@ -74,7 +73,7 @@ class DataHandler:
         logging.debug('Current library_path: ' + str(library_path))
         logging.info('Uninstalling: ' + asset.product_name)
 
-        file_paths = self.database.select_file_paths_by_id(asset.id_)
+        file_paths = self.sql_handler.file_paths.select_file_paths_by_id(asset.id_)
 
         for file_path in file_paths:
             absolute_path = library_path / file_path[1]
@@ -86,7 +85,7 @@ class DataHandler:
                 logging.error(e)
 
         FolderHelpers.delete_empty_dirs(library_path)
-        self.database.update_asset_installed(False, asset.id_)
+        self.sql_handler.assets.update_asset_installed(False, asset.id_)
         logging.info('Finished uninstall')
 
     def write_meta_import_script(self, metas):

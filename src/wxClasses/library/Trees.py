@@ -1,16 +1,17 @@
 import logging
-
 import wx
-from Handlers.Data import DataHandler
+from pathlib import Path
+
+from Handlers.Main import MainHandler
 from Helpers import FileHelpers
-from sqlObjects.Folder import Folder
-from sqlObjects.Source import Source
-from sqlObjects.Asset import Asset
+from SQLClasses.Folder import Folder
+from SQLClasses.Source import Source
+from SQLClasses.Asset import Asset
 
 
 class FolderTree(wx.TreeCtrl):
 
-    def __init__(self, parent, data: DataHandler, source_title: str,
+    def __init__(self, parent, data: MainHandler, source_path: Path,
                  wx_id=wx.ID_ANY, position=wx.DefaultPosition, size=wx.DefaultSize, style=wx.DEFAULT_FRAME_STYLE):
 
         wx.TreeCtrl.__init__(self, parent, wx_id, position, size, style)
@@ -22,16 +23,16 @@ class FolderTree(wx.TreeCtrl):
 
         self.AssignImageList(self.create_image_list())
 
-        self.make_from_hdd(source_title)
+        self.make_from_hdd(source_path)
 
-    def make_from_hdd(self, source_title: str):
+    def make_from_hdd(self, source_path: Path):
         self.DeleteAllItems()
         self.zip_count = 0
         self.size = 0
 
-        source: Source = self.data.database.select_source_by_title(source_title)
+        source: Source = self.data.sql_handler.sources.select_source_by_path(str(source_path))
 
-        logging.debug("Making tree by path with: " + str(source.path))
+        logging.info("Making tree by path with: " + str(source.path.name))
         root_data = {'id': source.id_,
                      'type': 'folder',
                      'path': source.path}
@@ -43,7 +44,7 @@ class FolderTree(wx.TreeCtrl):
             if self.GetItemData(node)['type'] == 'folder' and self.GetChildrenCount(node) < 1:
                 self.Delete(node)
 
-        logging.debug("Finished making tree")
+        logging.info("Finished making tree")
 
     def populate(self, current_node, current_data, source_id: int):
         node_list = []
@@ -53,7 +54,7 @@ class FolderTree(wx.TreeCtrl):
         for sub_path in sub_list:
 
             if sub_path.is_dir():
-                folder: Folder = self.data.database.create_folder(sub_path, source_id)
+                folder: Folder = self.data.sql_handler.folders.create_folder(sub_path, source_id)
                 next_data = {'id': folder.id_,
                              'type': 'folder',
                              'path': folder.path}
@@ -68,7 +69,7 @@ class FolderTree(wx.TreeCtrl):
                 self.zip_count += 1
                 self.size += FileHelpers.get_file_size(sub_path)
 
-                asset: Asset = self.data.database.create_asset(sub_path, source_id)
+                asset: Asset = self.data.sql_handler.assets.create_asset(sub_path, source_id)
                 next_data = {'id': asset.id_,
                              'type': 'asset',
                              'path': sub_path}
@@ -79,27 +80,25 @@ class FolderTree(wx.TreeCtrl):
         self.SortChildren(current_node)
         return node_list
 
-    def make_from_db(self, source_title: str):
+    def make_from_db(self, source_path: Path):
         self.DeleteAllItems()
         self.zip_count = 0
         self.size = 0
         node_list = {}
 
-        sources = self.data.sources
-        source = sources[source_title]
+        source: Source = self.data.sql_handler.sources.select_source_by_path(str(source_path))
+        logging.info('Making tree from database with source: ' + str(source.path))
 
-        logging.info('Making tree from database with source ' + source_title + ': ' + str(source.path))
-
-        folders = self.data.database.select_all_folders_by_source_id(source.id_)
+        folders = self.data.sql_handler.folders.select_all_folders_by_source_id(source.id_)
         if folders is None or len(folders) < 1:
-            logging.error('Database could not find any folders from source_index: ' + str(source_title))
+            logging.error('SQLHandlers could not find any folders from source_id_: ' + str(source.id_))
             return
 
         root_data = {'id': source.id_,
                      'type': 'folder',
                      'path': source.path}
 
-        node_list[str(source.path)] = self.root_node = self.AddRoot(source.title, data=root_data)
+        node_list[str(source.path)] = self.root_node = self.AddRoot(source.path.name, data=root_data)
 
         for folder in folders:
             folder = Folder(*folder)
@@ -112,7 +111,7 @@ class FolderTree(wx.TreeCtrl):
 
             node_list[str(folder.path)] = self.AppendItem(parent_node, folder.title, data=folder_data, image=0)
 
-        assets = self.data.database.select_all_assets_by_source_id(source.id_)
+        assets = self.data.sql_handler.assets.select_all_assets_by_source_id(source.id_)
 
         for asset in assets:
             self.zip_count += 1

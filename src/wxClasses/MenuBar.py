@@ -28,7 +28,7 @@ class MenuBar(wx.MenuBar):
 
         ##### View Menu ##################
         self.menus['view_menu'] = view_menu = wx.Menu()
-        self.menus['view_settings'] = view_settings = wx.MenuItem(view_menu, wx.ID_ANY, '&Configuration')
+        self.menus['view_config'] = view_settings = wx.MenuItem(view_menu, wx.ID_ANY, '&Configuration')
 
         view_menu.Append(view_settings)
 

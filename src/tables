@@ -44,7 +44,6 @@ CREATE TABLE IF NOT EXISTS folders (
 
 CREATE TABLE IF NOT EXISTS sources (
     id integer PRIMARY KEY,
-    title text NOT NULL,
     path text NOT NULL,
     file_count integer NOT NULL,
     size_raw integer NOT NULL,
@@ -61,7 +60,7 @@ CREATE TABLE IF NOT EXISTS metas (
 
 CREATE TABLE IF NOT EXISTS queue_items (
     asset_id integer NOT NULL,
-    process text NOT NULL,
+    process integer NOT NULL,
     status bool NOT NULL,
     pos integer NOT NULL,
     FOREIGN KEY (asset_id) REFERENCES assets (id),

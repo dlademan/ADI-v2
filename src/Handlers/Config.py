@@ -23,12 +23,15 @@ class ConfigHandler:
 
         if not self.config_path.exists(): self._create_config()
 
+        self.critical = False
+
         try:
-            self._config = ConfigObj(str(self.config_path))
+            self._config: ConfigObj = ConfigObj(str(self.config_path))
         except ConfigObjError as e:
             logging.critical('Error when establishing connection to ini file')
             logging.critical(e)
             self._config = None
+            self.critical = True
             return
 
         # load Options
@@ -38,7 +41,7 @@ class ConfigHandler:
         self.detect: bool = bool(self._config['Options']['detect'])
 
         # load Directories
-        self.archives: dict = self._config['Archives']
+        self.sources: dict = self._config['Sources']
         self.libraries: dict = self._config['Libraries']
 
         # load Dimensions
@@ -57,8 +60,8 @@ class ConfigHandler:
         self._config['Options']['close_dialog'] = False
         self._config['Options']['detect'] = False
 
-        self._config['Archives'] = {}
-        self._config['Archives']['default_archive'] = FolderHelpers.get_default_archive_path()
+        self._config['Sources'] = {}
+        self._config['Sources']['default_archive'] = FolderHelpers.get_default_archive_path()
 
         self._config['Libraries'] = {}
         self._config['Libraries']['default_library'] = FolderHelpers.get_default_library_path()
@@ -73,7 +76,7 @@ class ConfigHandler:
         self._config.write()
 
     def save_config(self, position=None, size=None):
-        self._config['Archives'] = self.archives
+        self._config['Sources'] = self.sources
         self._config['Libraries'] = self.libraries
 
         self._config['Options'] = {}
@@ -123,4 +126,4 @@ class ConfigHandler:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        logger.debug('Logger initialized')
+        logging.debug('Logger initialized')

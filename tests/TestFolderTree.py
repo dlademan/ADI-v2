@@ -2,8 +2,8 @@ import wx
 import logging
 from pathlib import Path
 
-from wxObjects.Trees import FolderTree
-from Handlers.Data import DataHandler
+from wxClasses.library.Trees import FolderTree
+from Handlers.Main import MainHandler
 from Helpers import FileHelpers
 
 
@@ -29,11 +29,11 @@ class TestFolderTreeFrame(wx.Frame):
         self.chooser = None
         self.tree = None
 
-        self.data = DataHandler()
+        self.data = MainHandler()
         self.set_pos_and_size()
 
-        self.data.database.create_folder(Path(r'D:\Files\DAZ Zips'), True)
-        self.data.database.create_folder(Path(r'D:\Files\DAZ Archive'), True)
+        self.data.sql_handler.create_folder(Path(r'D:\Files\DAZ Zips'), True)
+        self.data.sql_handler.create_folder(Path(r'D:\Files\DAZ Archive'), True)
 
         self._create_body()
         self.Show()
@@ -48,7 +48,7 @@ class TestFolderTreeFrame(wx.Frame):
         self.library_panel.Enable()
 
     def _get_selected_source_path(self):
-        sources = self.data.database.select_all_sources()
+        sources = self.data.sql_handler.select_all_sources()
         selected = self.chooser.GetSelection()
         return Path(sources[selected][1])
 
@@ -57,7 +57,7 @@ class TestFolderTreeFrame(wx.Frame):
         font_title = wx.Font(wx.FontInfo(16))
         font_data = wx.Font(wx.FontInfo(11))
 
-        sources = self.data.database.select_all_sources()
+        sources = self.data.sql_handler.select_all_sources()
         choices = []
         for source in sources:
             choices.append(source[1])

@@ -2,7 +2,7 @@ import wx
 import logging
 from ObjectListView2 import ColumnDefn, ObjectListView
 
-from Handlers.Data import DataHandler
+from Handlers.Main import MainHandler
 
 
 class TestObjectListViewApp(wx.App):
@@ -23,7 +23,7 @@ class TestObjectListViewFrame(wx.Frame):
                           size=(600, 800),
                           style=wx.DEFAULT_FRAME_STYLE)
 
-        self.data = DataHandler()
+        self.data = MainHandler()
 
         self._create_body()
         self.Show()
@@ -48,7 +48,7 @@ class TestObjectListViewFrame(wx.Frame):
         installed_column = ColumnDefn("Installed", "right", 90, "get_installed")
 
         columns = [idn_column, sku_column, product_name_column, zip_size_column, installed_column]
-        assets = self.data.database.select_all_assets()
+        assets = self.data.sql_handler.select_all_assets()
 
         panel = wx.Panel(self)
         box = wx.BoxSizer()

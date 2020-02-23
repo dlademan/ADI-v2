@@ -1,7 +1,7 @@
 import wx
 from ObjectListView2 import ObjectListView, ColumnDefn
 
-from Handlers.Data import DataHandler
+from Handlers.Main import MainHandler
 
 
 class OLVPanel(wx.Panel):
@@ -13,10 +13,10 @@ class OLVPanel(wx.Panel):
 
     """
 
-    def __init__(self, parent, data: DataHandler):
+    def __init__(self, parent, data: MainHandler):
         wx.Panel.__init__(self, parent)
         self.data = data
-        self.idns = [0]
+        self.id_s = [0]
 
         self._create_widgets()
         self._create_boxes()
@@ -33,7 +33,7 @@ class OLVPanel(wx.Panel):
         installed_column = ColumnDefn("Installed", "right", 90, "get_installed")
 
         self.columns = [sku_column, product_name_column, zip_size_column, installed_column]
-        assets = self.data.database.select_all_assets()
+        assets = self.data.sql_handler.assets.select_all_assets()
 
         self.olv = ObjectListView(parent=self, style=wx.LC_REPORT | wx.SUNKEN_BORDER,
                                   useAlternateBackColors=True)
@@ -60,19 +60,19 @@ class OLVPanel(wx.Panel):
 
         for source in sources:
             choices.append(str(source.path))
-            self.idns.append(source.id_)
+            self.id_s.append(source.id_)
 
         return choices
 
     def on_source_change(self, event: wx.Event = None):
         selection: int = self.source_choice.GetSelection()
-        idn: int = self.idns[selection]
-        source = self.data.database.select_source_by_idn(idn)
+        id_: int = self.id_s[selection]
+        source = self.data.sql_handler.sources.select_source_by_id(id_)
 
         if selection == 0:
-            assets = self.data.database.select_all_assets()
+            assets = self.data.sql_handler.assets.select_all_assets()
         else:
-            assets = self.data.database.select_all_assets_by_source_id(source.idn)
+            assets = self.data.sql_handler.assets.select_all_assets_by_source_id(source.id_)
 
         self.olv.DeleteAllItems()
         self.olv.SetObjects(assets)

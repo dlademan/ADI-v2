@@ -1,11 +1,9 @@
 import wx
-from pathlib import Path
 
-from wxObjects.Trees import FolderTree
-from wxObjects.TreeMenu import TreeMenu
-from sqlObjects.Asset import Asset
-from Handlers.Data import DataHandler
-from Helpers import FileHelpers, wxHelpers
+from wxClasses.library.Trees import FolderTree
+from wxClasses.TreeMenu import TreeMenu
+from Handlers.Main import MainHandler
+from Helpers import FileHelpers
 
 
 class TreePanel(wx.Panel):
@@ -21,11 +19,11 @@ class TreePanel(wx.Panel):
 
     """
 
-    def __init__(self, parent, data: DataHandler):
+    def __init__(self, parent, data: MainHandler):
         wx.Panel.__init__(self, parent=parent)
 
         self.data = data
-        self.titles = []
+        self.source_paths = []
 
         self._create_widgets()
         self._create_boxes()
@@ -48,7 +46,7 @@ class TreePanel(wx.Panel):
         self.count_label.SetFont(font_data)
         self.size_label.SetFont(font_data)
 
-        self.tree: FolderTree = FolderTree(parent=self, data=self.data, source_title=self._get_selected_source_title())
+        self.tree: FolderTree = FolderTree(parent=self, data=self.data, source_path=self._get_selected_source_path())
 
     def _create_boxes(self):
         archive_box = wx.BoxSizer()
@@ -97,27 +95,27 @@ class TreePanel(wx.Panel):
 
         for source in sources:
             choices.append(str(source.path))
-            self.titles.append(source.title)
+            self.source_paths.append(source.path)
 
         return choices
 
-    def _get_selected_source_title(self):
-        index = self.source_choice.GetSelection()
-        return self.titles[index]
+    def _get_selected_source_path(self):
+        index: int = self.source_choice.GetSelection()
+        return self.source_paths[index]
 
     def on_refresh_tree(self, event=None):
         self._blank_source_details()
-        self.tree.make_from_hdd(self._get_selected_source_title())
+        self.tree.make_from_hdd(self._get_selected_source_path())
         self._update_source_details()
 
     def _on_source_change(self, event=None):
         selection = self.source_choice.GetSelection()
-        self.tree.make_from_db(self.titles[selection])
+        self.tree.make_from_db(self.source_paths[selection])
         self._update_source_details()
 
     def _on_tree_item_menu(self, event=None):
-        data = self.tree.GetItemData(event.GetItem())
-        context_menu = TreeMenu(self.data, data)
+        item_data = self.tree.GetItemData(event.GetItem())
+        context_menu = TreeMenu(self.data, item_data)
         self.PopupMenu(context_menu, event.GetPoint())
 
 

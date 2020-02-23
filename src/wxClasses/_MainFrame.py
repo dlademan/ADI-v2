@@ -1,15 +1,14 @@
 import wx
 import logging
 
-from Handlers.Data import DataHandler
+from Handlers.Main import MainHandler
 
-from wxObjects.TreePanel import TreePanel
-from wxObjects.OLVPanel import OLVPanel
-from wxObjects.MenuBar import MenuBar
-from wxObjects.DetailsPanel import DetailsPanel
-from wxObjects.NotebookPanel import NotebookPanel
+from wxClasses.MenuBar import MenuBar
+from wxClasses.DetailsPanel import DetailsPanel
+from wxClasses.library.LibraryNotebook import LibraryNotebook
+from wxClasses.Settings.SettingsDialog import SettingsDialog
 
-from sqlObjects.Asset import Asset
+from SQLClasses.Asset import Asset
 
 
 class MainFrame(wx.Frame):
@@ -28,8 +27,8 @@ class MainFrame(wx.Frame):
                           size=(1100, 800),
                           style=wx.DEFAULT_FRAME_STYLE)
 
-        self.data: DataHandler = DataHandler()
-        if self.data.critical:
+        self.data: MainHandler = MainHandler()
+        if self.data.config.critical:
             logging.critical('ADI Has experienced a critical error during data initialization and must exit')
             return
 
@@ -76,7 +75,7 @@ class MainFrame(wx.Frame):
         self.main_splitter = wx.SplitterWindow(self)
         self.main_splitter.SetSashGravity(0.5)
 
-        self.notebook_panel: NotebookPanel = NotebookPanel(self.main_splitter, self.data)
+        self.notebook_panel: LibraryNotebook = LibraryNotebook(self.main_splitter, self.data)
         self.details_panel: DetailsPanel = DetailsPanel(self.main_splitter, self.data)
 
         self.main_splitter.SplitVertically(self.notebook_panel, self.details_panel)
@@ -92,7 +91,7 @@ class MainFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self._on_import_meta, self.menu_bar.menus['library_import_meta'])
 
-        self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_settings'])
+        self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_config'])
 
         # Tree Binds ###################
         self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_tree_selection_change, self.notebook_panel.tree_panel.tree)
@@ -103,29 +102,29 @@ class MainFrame(wx.Frame):
     def _get_selected_source_title(self):
         selection = self.tree_panel.source_choice.GetSelection()
         title = self.tree_panel.titles[selection]
-        source = self.data.database.select_source_by_title(title)
+        source = self.data.sql_handler.select_source_by_title(title)
         return source
 
     def _on_show_config_frame(self, event=None):
-        logging.debug('Showing config_frame')
+        self.settings_dialog = SettingsDialog(self, self.data)
 
     def _on_import_meta(self, event=None):
-        metas = self.data.database.select_metas_by_imported(False)
+        metas = self.data.sql_handler.metas.select_metas_by_imported(False)
 
         self.data.write_meta_import_script(metas)
         self.data.execute_meta_import_script()
 
         for meta in metas:
-            self.data.database.update_metas_imported_to(meta.asset_id, True)
+            self.data.sql_handler.update_metas_imported_to(meta.asset_id, True)
 
     def _on_tree_selection_change(self, event):
         data = self.notebook_panel.tree_panel.tree.GetItemData(event.GetItem())
 
         if data['type'] == 'asset':
-            asset = self.data.database.select_asset_by_id(data['id'])
+            asset = self.data.sql_handler.assets.select_asset_by_id(data['id'])
             self.details_panel.update_values_for_asset(asset)
         elif data['type'] == 'folder':
-            folder = self.data.database.select_folder_by_id(data['id'])
+            folder = self.data.sql_handler.folders.select_folder_by_id(data['id'])
             self.details_panel.update_values_for_folder(folder)
 
     def _on_olv_selection_change(self, event=None):

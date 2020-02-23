@@ -1,9 +1,9 @@
 import wx
 
-from Handlers.Data import DataHandler
-from sqlObjects.Asset import Asset
-from sqlObjects.Folder import Folder
-from sqlObjects.Source import Source
+from Handlers.Main import MainHandler
+from SQLClasses.Asset import Asset
+from SQLClasses.Folder import Folder
+from SQLClasses.Source import Source
 
 
 class DetailsPanel(wx.Panel):
@@ -14,7 +14,7 @@ class DetailsPanel(wx.Panel):
 
     """
 
-    def __init__(self, parent, data: DataHandler):
+    def __init__(self, parent, data: MainHandler):
         wx.Panel.__init__(self, parent=parent)
         self.data = data
         self.labels = 0
@@ -31,11 +31,11 @@ class DetailsPanel(wx.Panel):
         self.title_label = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
         self.title_label.SetFont(font_title)
 
-        self.label_1 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
-        self.label_2 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
-        self.label_3 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
-        self.label_4 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
-        self.label_5 = wx.StaticText(self, label='            ', style=wx.ALIGN_RIGHT)
+        self.label_1 = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
+        self.label_2 = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
+        self.label_3 = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
+        self.label_4 = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
+        self.label_5 = wx.StaticText(self, label='', style=wx.ALIGN_RIGHT)
 
         self.label_2.SetFont(font_data)
         self.label_1.SetFont(font_data)
@@ -69,6 +69,7 @@ class DetailsPanel(wx.Panel):
         labels_box.Add(self.label_3, 1, wx.EXPAND | wx.ALL, 5)
         labels_box.Add(self.label_4, 1, wx.EXPAND | wx.ALL, 5)
         labels_box.Add(self.label_5, 1, wx.EXPAND | wx.ALL, 5)
+        labels_box.SetMinSize(80, 0)
 
         values_box = wx.BoxSizer(wx.VERTICAL)
         values_box.Add(self.value_1, 0, wx.EXPAND | wx.ALL, 5)
@@ -77,7 +78,7 @@ class DetailsPanel(wx.Panel):
         values_box.Add(self.value_4, 0, wx.EXPAND | wx.ALL, 5)
         values_box.Add(self.value_5, 0, wx.EXPAND | wx.ALL, 5)
 
-        buttons_box = wx.BoxSizer(wx.VERTICAL)
+        buttons_box = wx.BoxSizer(wx.HORIZONTAL)
         for i, button in enumerate(self.action_buttons):
             buttons_box.Add(button, 1, wx.EXPAND | wx.ALL, 3)
             if i is not len(self.action_buttons):
@@ -85,7 +86,6 @@ class DetailsPanel(wx.Panel):
 
         data_box = wx.BoxSizer(wx.HORIZONTAL)
         # data_box.Add(self.inner_padding, 0, 0)
-        data_box.Add(buttons_box, 0, wx.ALL, 5)
         data_box.Add(labels_box, 0, wx.ALL, 5)
         data_box.Add(values_box, 1, wx.ALL, 5)
 
@@ -94,6 +94,7 @@ class DetailsPanel(wx.Panel):
         details_box.Add(name_box, 0, wx.ALL, 5)
         # details_box.Add(0, self.inner_padding, 0)
         details_box.Add(data_box, 0, wx.ALL, 5)
+        details_box.Add(buttons_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
         main_box = wx.BoxSizer()
         main_box.Add(details_box, 1, wx.EXPAND | wx.ALL, 5)
@@ -118,7 +119,7 @@ class DetailsPanel(wx.Panel):
             self._update_labels_for_asset()
             self.labels = 'asset'
 
-        source: Source = self.data.database.select_source_by_idn(asset.source_id)
+        source: Source = self.data.sql_handler.sources.select_source_by_id(asset.source_id)
         path = str(asset.path)[len(str(source.path))-len(source.path.name):]
 
         self.title_label.SetLabel(asset.product_name)
@@ -134,7 +135,7 @@ class DetailsPanel(wx.Panel):
             self._update_labels_for_folder()
             self.labels = 'folder'
 
-        source: Source = self.data.database.select_source_by_idn(folder.source_id)
+        source: Source = self.data.sql_handler.sources.select_source_by_id(folder.source_id)
         path = str(folder.path)[len(str(source.path))-len(source.path.name):]
 
         self.title_label.SetLabel(folder.title)

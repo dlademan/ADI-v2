@@ -203,7 +203,8 @@ class FolderHelpers:
     def open_location(path: Path):
         subprocess.Popen(r'explorer ' + str(path))
 
-class wxHelpers:
+
+class WXHelpers:
 
     @staticmethod
     def create_menu_option(self, parent_menu, label, method, *passed_args):
