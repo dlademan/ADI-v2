@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from SQLHandlers._SQLHandler import SQLHandler
+from SQL.SQLHandler import SQLHandler
 
 
 class TestDatabase(unittest.TestCase):

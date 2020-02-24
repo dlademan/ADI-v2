@@ -91,7 +91,7 @@ class FolderTree(wx.TreeCtrl):
 
         folders = self.data.sql_handler.folders.select_all_folders_by_source_id(source.id_)
         if folders is None or len(folders) < 1:
-            logging.error('SQLHandlers could not find any folders from source_id_: ' + str(source.id_))
+            logging.error('SQL could not find any folders from source_id_: ' + str(source.id_))
             return
 
         root_data = {'id': source.id_,

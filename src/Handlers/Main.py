@@ -4,12 +4,13 @@ import shutil
 from pathlib import Path
 from zipfile import ZipFile
 
+from Helpers import FileHelpers, FolderHelpers
+
 from Handlers.Config import ConfigHandler
 from Handlers.Queue import QueueHandler
-from SQLHandlers._SQLHandler import SQLHandler
 
-from SQLClasses.Asset import Asset
-from Helpers import FileHelpers, FolderHelpers
+from SQL.SQLHandler import SQLHandler
+from SQL.AssetsHandler import Asset
 
 
 class MainHandler:
@@ -29,7 +30,6 @@ class MainHandler:
 
     def close(self, position, size):
         self.config.save_config(position, size)
-        self.sql_handler.close()
 
     def _create_sources(self):
         sources = {}
