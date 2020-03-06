@@ -24,10 +24,10 @@ class DirectoriesPanel(wx.Panel):
 
         self.sources = {}
 
-        for i, source in enumerate(self.data.sources.values()):
+        for i, source in enumerate(self.data.db.sources):
             i = i+10
             self.sources[str(i)] = {}
-            text_ctrl: wx.TextCtrl = wx.TextCtrl(self, id=i, name=f'{i}', value=str(source.path))
+            text_ctrl: wx.TextCtrl = wx.TextCtrl(self, id=i, name=f'{i}', value=source.path_raw)
             browse_button = wx.Button(self, id=i, name=f'browse_button_{i}', label='...', size=wx.Size(30, 0))
             delete_button = wx.Button(self, id=i, name=f'delete_button_{i}', label='X', size=wx.Size(30, 0))
 

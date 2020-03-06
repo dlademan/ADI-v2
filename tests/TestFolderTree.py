@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from wxClasses.library.Trees import FolderTree
-from Handlers.Main import MainHandler
+from handlers.Data import DataHandler
 from Helpers import FileHelpers
 
 
@@ -29,11 +29,11 @@ class TestFolderTreeFrame(wx.Frame):
         self.chooser = None
         self.tree = None
 
-        self.data = MainHandler()
+        self.data = DataHandler()
         self.set_pos_and_size()
 
-        self.data.sql_handler.create_folder(Path(r'D:\Files\DAZ Zips'), True)
-        self.data.sql_handler.create_folder(Path(r'D:\Files\DAZ Archive'), True)
+        self.data.db.create_folder(Path(r'D:\Files\DAZ Zips'), True)
+        self.data.db.create_folder(Path(r'D:\Files\DAZ Archive'), True)
 
         self._create_body()
         self.Show()
@@ -48,7 +48,7 @@ class TestFolderTreeFrame(wx.Frame):
         self.library_panel.Enable()
 
     def _get_selected_source_path(self):
-        sources = self.data.sql_handler.select_all_sources()
+        sources = self.data.db.select_all_sources()
         selected = self.chooser.GetSelection()
         return Path(sources[selected][1])
 
@@ -57,7 +57,7 @@ class TestFolderTreeFrame(wx.Frame):
         font_title = wx.Font(wx.FontInfo(16))
         font_data = wx.Font(wx.FontInfo(11))
 
-        sources = self.data.sql_handler.select_all_sources()
+        sources = self.data.db.select_all_sources()
         choices = []
         for source in sources:
             choices.append(source[1])
@@ -87,7 +87,7 @@ class TestFolderTreeFrame(wx.Frame):
         details_box.Add(self.size_label, 0, wx.EXPAND | wx.ALL)
 
         tree_box = wx.BoxSizer(wx.VERTICAL)
-        self.tree = FolderTree(self.library_panel, self.data, Path(sources[0][1]))
+        self.tree = FolderTree(self.library_panel, self.data.db, Path(sources[0][1]))
         tree_box.Add(self.tree, wx.ID_ANY, wx.EXPAND | wx.ALL)
 
         main_box.Add(archive_box, 0, wx.EXPAND | wx.ALL, 5)

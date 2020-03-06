@@ -1,13 +1,13 @@
 import wx
 
-from Handlers.Main import MainHandler
+from handlers.Data import DataHandler
 from wxClasses.library.OLVPanel import OLVPanel
 from wxClasses.library.TreePanel import TreePanel
 
 
 class LibraryNotebook(wx.Notebook):
 
-    def __init__(self, parent, data: MainHandler):
+    def __init__(self, parent, data: DataHandler):
         wx.Notebook.__init__(self, parent)
 
         self.notebook = wx.Notebook(self)

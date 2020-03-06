@@ -1,8 +1,8 @@
 import wx
 import logging
 
-from Handlers.Main import MainHandler
-from src.wxClasses.Settings.DirectoriesPanel import DirectoriesPanel
+from handlers.Data import DataHandler
+from src.wxClasses.settings.DirectoriesPanel import DirectoriesPanel
 
 
 class SettingsDialog(wx.Dialog):
@@ -15,7 +15,7 @@ class SettingsDialog(wx.Dialog):
                            style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN)
 
         self.parent: wx.Frame = parent
-        self.data: MainHandler = data
+        self.data: DataHandler = data
 
         self._create_widgets()
 

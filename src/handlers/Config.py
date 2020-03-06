@@ -6,6 +6,8 @@ from pathlib import Path
 from configobj import ConfigObj, ConfigObjError
 from Helpers import FolderHelpers
 
+MB_SCALAR = 1024 * 1024
+
 
 class ConfigHandler:
 
@@ -26,7 +28,7 @@ class ConfigHandler:
         self.critical = False
 
         try:
-            self._config: ConfigObj = ConfigObj(str(self.config_path))
+            self._config: ConfigObj = ConfigObj(str(self.config_path), encoding='utf-8')
         except ConfigObjError as e:
             logging.critical('Error when establishing connection to ini file')
             logging.critical(e)
@@ -72,7 +74,7 @@ class ConfigHandler:
         self._config['Dimensions']['first'] = True
         self._config['Dimensions']['version'] = 'temp'
 
-        logging.info('Creating ' + self.config_path.name + ' in ' + str(self.user_folder_path))
+        logging.info(f'Creating {self.config_path.name} in {self.user_folder_path}')
         self._config.write()
 
     def save_config(self, position=None, size=None):
@@ -98,23 +100,23 @@ class ConfigHandler:
         logging.debug('Saving config to: ' + str(self.config_path.name))
         self._config.write()
 
-    def _init_logger(self):
+    def _init_logger(self, max_size: int = 2):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-        debug_handler = RotatingFileHandler(self.user_folder_path / 'log_debug.txt',
-                                            mode='a', maxBytes=2 * 1024 * 1024,
-                                            backupCount=1, encoding=None, delay=0)
+        debug_handler = RotatingFileHandler(str(self.user_folder_path / 'log_debug.txt'),
+                                            mode='a', maxBytes=max_size * MB_SCALAR,
+                                            backupCount=1, encoding='utf-8', delay=False)
 
         debug_handler.setLevel(logging.DEBUG)
         debug_handler.setFormatter(formatter)
         logger.addHandler(debug_handler)
 
-        info_handler = RotatingFileHandler(self.user_folder_path / 'log.txt',
-                                           mode='a', maxBytes=2 * 1024 * 1024,
-                                           backupCount=1, encoding=None, delay=0)
+        info_handler = RotatingFileHandler(str(self.user_folder_path / 'log.txt'),
+                                           mode='a', maxBytes=max_size * MB_SCALAR,
+                                           backupCount=1, encoding='utf-8', delay=False)
 
         info_handler.setLevel(logging.INFO)
         info_handler.setFormatter(formatter)

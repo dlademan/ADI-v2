@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from SQL.SQLHandler import SQLHandler
+from sql.DBClasses import DBHandler
 
 
 class TestDatabase(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestDatabase(unittest.TestCase):
 
         folder_path = Path(r'D:\Files\DAZ Zips')
         user_path = Path(r'C:\Users\glavi\AppData\Roaming\ADI')
-        database = SQLHandler(user_path)
+        database = DBHandler(user_path)
 
         folder_tuple = database.create_folder(folder_path)
 
@@ -30,7 +30,7 @@ class TestDatabase(unittest.TestCase):
             r'D:\Files\DAZ Zips\Genesis 8\Female\Hair\IM00045853-01_LaineyHairforGenesis3FemalesandGenesis8Females.zip')
 
         user_path = Path(r'C:\Users\glavi\AppData\Roaming\ADI')
-        database = SQLHandler(user_path)
+        database = DBHandler(user_path)
 
         asset_tuple = database.create_asset(asset_path)
 

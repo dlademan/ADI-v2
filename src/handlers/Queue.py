@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from Helpers import FolderHelpers
-from SQLClasses import QueueItem
+from sql.DBClasses import QueueItem
 
 
 class QueueHandler:

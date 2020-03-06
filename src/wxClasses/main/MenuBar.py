@@ -21,20 +21,20 @@ class MenuBar(wx.MenuBar):
         file_menu.Append(file_quit)
 
         ##### Library Menu ###############
-        self.menus['library_menu'] = library_menu = wx.Menu()
-        self.menus['library_import_meta'] = library_import_meta = wx.MenuItem(file_menu, -1, '&Import Metadata')
+        self.menus['daz_menu'] = daz_menu = wx.Menu()
+        self.menus['daz_import_meta'] = daz_import_meta = wx.MenuItem(file_menu, -1, '&Import Metadata')
 
-        library_menu.Append(library_import_meta)
+        daz_menu.Append(daz_import_meta)
 
         ##### View Menu ##################
         self.menus['view_menu'] = view_menu = wx.Menu()
-        self.menus['view_config'] = view_settings = wx.MenuItem(view_menu, wx.ID_ANY, '&Configuration')
+        self.menus['view_settings'] = view_settings = wx.MenuItem(view_menu, wx.ID_ANY, '&Configuration')
+        self.menus['view_queue'] = view_queue = wx.MenuItem(view_menu, wx.ID_ANY, '&Queue')
 
         view_menu.Append(view_settings)
+        view_menu.Append(view_queue)
 
         ##### Menu Bar ##################
         self.Append(file_menu, '&File')
-        self.Append(library_menu, '&Library')
+        self.Append(daz_menu, '&Daz Studio')
         self.Append(view_menu, '&View')
-
-        logging.debug("Finished menu_bar")

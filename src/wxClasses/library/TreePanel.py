@@ -1,9 +1,9 @@
 import wx
 
 from wxClasses.library.Trees import FolderTree
-from wxClasses.TreeMenu import TreeMenu
-from Handlers.Main import MainHandler
-from Helpers import FileHelpers
+from wxClasses.library.TreeMenu import TreeMenu
+from handlers.Data import DataHandler
+from Helpers import FileHelpers, FolderHelpers
 
 
 class TreePanel(wx.Panel):
@@ -13,13 +13,14 @@ class TreePanel(wx.Panel):
     Attributes:
         self.chooser:        wx.Choice
         self.button_refresh: wx.Button
+        self.button_open:    wx.Button
         self.count_label:    wx.StaticText
         self.size_label:     wx.StaticText
         self.tree:           FolderTree: wx.TreeCtrl
 
     """
 
-    def __init__(self, parent, data: MainHandler):
+    def __init__(self, parent, data: DataHandler):
         wx.Panel.__init__(self, parent=parent)
 
         self.data = data
@@ -39,6 +40,7 @@ class TreePanel(wx.Panel):
         self.source_choice.SetSelection(0)
 
         self.button_refresh = wx.Button(self, label='Refresh', style=wx.BORDER_NONE)
+        self.button_open = wx.Button(self, label='Open', style=wx.BORDER_NONE)
 
         self.count_label = wx.StaticText(self, label='')
         self.size_label = wx.StaticText(self, label='')
@@ -46,13 +48,15 @@ class TreePanel(wx.Panel):
         self.count_label.SetFont(font_data)
         self.size_label.SetFont(font_data)
 
-        self.tree: FolderTree = FolderTree(parent=self, data=self.data, source_path=self._get_selected_source_path())
+        self.tree: FolderTree = FolderTree(parent=self, db=self.data.db, source_path=self._get_selected_source_path())
 
     def _create_boxes(self):
         archive_box = wx.BoxSizer()
+        archive_box.Add(self.source_choice, 1, wx.EXPAND | wx.ALL)
+        archive_box.Add(10, 0, 0)
         archive_box.Add(self.button_refresh, 0, wx.EXPAND | wx.ALL)
         archive_box.Add(10, 0, 0)
-        archive_box.Add(self.source_choice, 1, wx.EXPAND | wx.ALL)
+        archive_box.Add(self.button_open, 0, wx.EXPAND | wx.ALL)
 
         details_box = wx.BoxSizer()
         details_box.Add(10, 0, 0)
@@ -72,6 +76,7 @@ class TreePanel(wx.Panel):
 
     def _bind_widgets(self):
         self.button_refresh.Bind(wx.EVT_BUTTON, self.on_refresh_tree)
+        self.button_open.Bind(wx.EVT_BUTTON, self.on_open_source)
         self.source_choice.Bind(wx.EVT_CHOICE, self._on_source_change)
         self.tree.Bind(wx.EVT_TREE_ITEM_MENU, self._on_tree_item_menu)
 
@@ -90,11 +95,11 @@ class TreePanel(wx.Panel):
         self.size_label.SetLabel(size_text)
 
     def _get_choices(self):
-        sources = self.data.sources.values()
+        sources = self.data.db.sources
         choices = []
 
         for source in sources:
-            choices.append(str(source.path))
+            choices.append(source.path.name)
             self.source_paths.append(source.path)
 
         return choices
@@ -107,6 +112,10 @@ class TreePanel(wx.Panel):
         self._blank_source_details()
         self.tree.make_from_hdd(self._get_selected_source_path())
         self._update_source_details()
+
+    def on_open_source(self, event=None):
+        selection = self.source_choice.GetSelection()
+        FolderHelpers.open_location(self.source_paths[selection])
 
     def _on_source_change(self, event=None):
         selection = self.source_choice.GetSelection()

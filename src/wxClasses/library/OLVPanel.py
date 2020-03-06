@@ -1,7 +1,8 @@
 import wx
+import logging
 from ObjectListView2 import ObjectListView, ColumnDefn
 
-from Handlers.Main import MainHandler
+from handlers.Data import DataHandler
 
 
 class OLVPanel(wx.Panel):
@@ -13,7 +14,7 @@ class OLVPanel(wx.Panel):
 
     """
 
-    def __init__(self, parent, data: MainHandler):
+    def __init__(self, parent, data: DataHandler):
         wx.Panel.__init__(self, parent)
         self.data = data
         self.id_s = [0]
@@ -26,20 +27,19 @@ class OLVPanel(wx.Panel):
         self.source_choice = wx.Choice(self, choices=self._get_choices())
         self.source_choice.SetSelection(0)
 
-        idn_column = ColumnDefn("ID", "right", 60, "idn")
+        id_column = ColumnDefn("ID", "right", 60, "id")
         sku_column = ColumnDefn("SKU", "right", 80, "sku")
         product_name_column = ColumnDefn("Product Name", "left", 160, "product_name", isSpaceFilling=True)
-        zip_size_column = ColumnDefn("Zip Size", "right", 90, "get_size")
-        installed_column = ColumnDefn("Installed", "right", 90, "get_installed")
+        zip_size_column = ColumnDefn("Zip Size", "right", 90, "size")
+        installed_column = ColumnDefn("Installed", "right", 90, "installed")
 
-        self.columns = [sku_column, product_name_column, zip_size_column, installed_column]
-        assets = self.data.sql_handler.assets.select_all_assets()
+        columns = [sku_column, product_name_column, installed_column, zip_size_column]
 
         self.olv = ObjectListView(parent=self, style=wx.LC_REPORT | wx.SUNKEN_BORDER,
                                   useAlternateBackColors=True)
 
-        self.olv.SetColumns(self.columns)
-        self.olv.SetObjects(assets)
+        self.olv.SetColumns(columns)
+        self.olv.SetObjects(self.data.db.assets.all)
 
         self.olv.oddRowsBackColor = wx.Colour(255, 255, 255)
         self.olv.evenRowsBackColor = wx.Colour(240, 240, 240)
@@ -55,24 +55,23 @@ class OLVPanel(wx.Panel):
         self.source_choice.Bind(wx.EVT_CHOICE, self.on_source_change)
 
     def _get_choices(self):
-        sources = self.data.sources.values()
         choices = ['All Assets']
 
-        for source in sources:
-            choices.append(str(source.path))
-            self.id_s.append(source.id_)
+        for source in self.data.db.sources:
+            choices.append(source.path_raw)
+            self.id_s.append(source.id)
 
         return choices
 
     def on_source_change(self, event: wx.Event = None):
         selection: int = self.source_choice.GetSelection()
-        id_: int = self.id_s[selection]
-        source = self.data.sql_handler.sources.select_source_by_id(id_)
+        id: int = self.id_s[selection]
+        source = self.data.db.sources[id]
 
         if selection == 0:
-            assets = self.data.sql_handler.assets.select_all_assets()
+            assets = self.data.db.assets.all
         else:
-            assets = self.data.sql_handler.assets.select_all_assets_by_source_id(source.id_)
+            assets = self.data.db.assets.filter_by(source_id=source.id).all()
 
         self.olv.DeleteAllItems()
         self.olv.SetObjects(assets)

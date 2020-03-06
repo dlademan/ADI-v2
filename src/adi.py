@@ -1,5 +1,4 @@
-from wxClasses._MainFrame import MainFrame
-import wx.adv
+from wxClasses.main._MainFrame import MainFrame
 import wx.lib.mixins.inspection
 
 

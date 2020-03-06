@@ -6,7 +6,9 @@ import subprocess
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 from platform import system
-from zipfile import ZipFile, BadZipFile
+from zipfile import ZipFile, ZipInfo, BadZipFile
+from sqlalchemy.exc import DatabaseError
+
 
 import wx
 
@@ -15,12 +17,18 @@ class FileHelpers:
 
     @staticmethod
     def get_sku(path: Path):
-        # todo look at files in Runtime/Support for SKU
+        sku = 0
+
         if path.suffix != '.zip':
             logging.error('Path provided does not point to a zip file, returning 0')
-            return 0
+            return sku
 
-        sku = 0
+        with ZipFile(path, 'r') as zfile:
+            info: ZipInfo
+            for info in zfile.infolist():
+                file_name = FileHelpers.clean_path(info.filename)
+                if file_name[:23] == 'Runtime/Support/DAZ_3D_' and info.filename[-4:] == '.dsx':
+                    return int(file_name[23:][:5])
 
         file_name = path.name
         if file_name[:2] == 'IM' and file_name[10] == '-' and file_name[13] == '_':
@@ -28,6 +36,26 @@ class FileHelpers:
             sku = int(file_name[2:])
 
         return sku
+
+    @staticmethod
+    def get_img_preview(zip_path: Path):
+        logging.debug(f'Finding asset image for: {zip_path.name}')
+        with ZipFile(zip_path, 'r') as zfile:
+            root = 'Runtime/Support/'
+            results = [i for i in zfile.namelist() if root in i and i[-4:] in ['.png', '.jpg']]
+            local_path = Path(results[0]) if len(results) > 0 else None
+
+            if local_path is not None:
+                images_folder_path = FolderHelpers.get_user_folder() / 'images'
+                if not images_folder_path.exists(): images_folder_path.mkdir()
+
+                img_path = images_folder_path / local_path.name
+                with open(img_path, 'wb') as out:
+                    out.write(zfile.read(results[0]))
+
+                return img_path.name
+            else:
+                return 'DNE'
 
     @staticmethod
     def get_zip_hash(path: Path):
@@ -46,7 +74,7 @@ class FileHelpers:
         return zip_hash.hexdigest()
 
     @staticmethod
-    def get_product_name(path: Path):
+    def parse_product_name(path: Path):
         product_name = path.stem
 
         try:
@@ -92,9 +120,6 @@ class FileHelpers:
 
     @staticmethod
     def format_bytes(size, places=2):
-
-        rnd = places * 10
-
         if size > 2 ** 30:
             size /= 2 ** 30
             ext = ' GB'
@@ -102,7 +127,9 @@ class FileHelpers:
             size /= 2 ** 20
             ext = ' MB'
 
-        return str(int(size * rnd) / rnd) + ext
+        size = round(size, places)
+
+        return str(size) + ext
 
     @staticmethod
     def get_file_size(path: Path):
@@ -121,6 +148,10 @@ class FileHelpers:
     @staticmethod
     def open_location(path: Path):
         subprocess.Popen(r'explorer /select, ' + str(path))
+
+    @staticmethod
+    def delete_file(path: Path):
+        path.unlink()
 
 
 class FolderHelpers:
@@ -157,9 +188,9 @@ class FolderHelpers:
         return count
 
     @staticmethod
-    def get_user_folder():
+    def get_user_folder(subfolder=''):
         if system() == 'Windows':
-            return Path(os.getenv('APPDATA') + '/ADI/')
+            return Path(os.getenv('APPDATA') + '/ADI/' + subfolder)
         elif system() == 'Darwin':  # mac
             return Path(os.path.expanduser('~/Library/Application Support/ADI/'))
         else:  # linux
@@ -211,3 +242,18 @@ class WXHelpers:
         menu_item = parent_menu.Append(-1, label)
         wrapper = lambda event: method(*passed_args)
         self.Bind(wx.EVT_MENU, wrapper, menu_item)
+
+
+class SQLHelpers:
+
+    @staticmethod
+    def commit(session, row=None):
+        try:
+            if row is not None:
+                session.add(row)
+            session.commit()
+        except DatabaseError as e:
+            logging.critical(e)
+            session.rollback()
+        finally:
+            session.close()

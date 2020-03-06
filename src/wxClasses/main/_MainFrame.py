@@ -1,24 +1,19 @@
 import wx
 import logging
 
-from Handlers.Main import MainHandler
+from handlers.Data import DataHandler
 
-from wxClasses.MenuBar import MenuBar
-from wxClasses.DetailsPanel import DetailsPanel
+from wxClasses.main.MenuBar import MenuBar
+from wxClasses.main.DetailsPanel import DetailsPanel
+from wxClasses.main.MetaDialog import MetaDialog
 from wxClasses.library.LibraryNotebook import LibraryNotebook
-from wxClasses.Settings.SettingsDialog import SettingsDialog
+from wxClasses.settings.SettingsDialog import SettingsDialog
+from wxClasses.queue.QueueDialog import QueueDialog
 
-from SQLClasses.Asset import Asset
+from sql.DBClasses import Asset
 
 
 class MainFrame(wx.Frame):
-    """
-    Main frame window of ADI
-
-    Attributes:
-        self.data:     DataHandler
-        self.tree_tab: TreePanel
-    """
 
     def __init__(self, parent, wx_id, title):
 
@@ -27,12 +22,12 @@ class MainFrame(wx.Frame):
                           size=(1100, 800),
                           style=wx.DEFAULT_FRAME_STYLE)
 
-        self.data: MainHandler = MainHandler()
+        self.data: DataHandler = DataHandler()
         if self.data.config.critical:
             logging.critical('ADI Has experienced a critical error during data initialization and must exit')
             return
 
-        logging.info('------------------- ADI Started')
+        logging.info('--- ADI Started ---------------')
 
         self.main_splitter = None
         self.notebook_library = None
@@ -49,10 +44,11 @@ class MainFrame(wx.Frame):
         self.main_splitter.Disable()
 
     def _on_close(self, event=None):
+        logging.info('Close event triggered')
         self.data.close(position=self.GetPosition().Get(),
                         size=self.GetSize().Get())
         event.Skip()
-        logging.info('-------------------- ADI Closed')
+        logging.info('--- ADI Closed ----------------')
         self.Destroy()
 
     def _set_pos_and_size(self):
@@ -60,11 +56,11 @@ class MainFrame(wx.Frame):
         self.SetSize(wx.Size(*self.data.config.win_size))
 
     def _create_body(self):
-        logging.debug('Creating ADI main frame')
+        logging.info('Creating ADI main frame')
         self.menu_bar = MenuBar()
         self.SetMenuBar(self.menu_bar)
         self._create_main_splitter()
-        logging.debug('Finished ADI main frame')
+        logging.info('Finished ADI main frame')
 
         self._binds()
         self._set_pos_and_size()
@@ -74,6 +70,7 @@ class MainFrame(wx.Frame):
 
         self.main_splitter = wx.SplitterWindow(self)
         self.main_splitter.SetSashGravity(0.5)
+        self.main_splitter.SetSashInvisible(True)
 
         self.notebook_panel: LibraryNotebook = LibraryNotebook(self.main_splitter, self.data)
         self.details_panel: DetailsPanel = DetailsPanel(self.main_splitter, self.data)
@@ -89,9 +86,10 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.notebook_panel.tree_panel.on_refresh_tree, self.menu_bar.menus['file_refresh'])
         self.Bind(wx.EVT_MENU, self._on_close, self.menu_bar.menus['file_quit'])
 
-        self.Bind(wx.EVT_MENU, self._on_import_meta, self.menu_bar.menus['library_import_meta'])
+        self.Bind(wx.EVT_MENU, self._on_import_meta, self.menu_bar.menus['daz_import_meta'])
 
-        self.Bind(wx.EVT_MENU, self._on_show_config_frame, self.menu_bar.menus['view_config'])
+        self.Bind(wx.EVT_MENU, self._on_show_settings_dialog, self.menu_bar.menus['view_settings'])
+        self.Bind(wx.EVT_MENU, self._on_show_queue_dialog, self.menu_bar.menus['view_queue'])
 
         # Tree Binds ###################
         self.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_tree_selection_change, self.notebook_panel.tree_panel.tree)
@@ -102,29 +100,35 @@ class MainFrame(wx.Frame):
     def _get_selected_source_title(self):
         selection = self.tree_panel.source_choice.GetSelection()
         title = self.tree_panel.titles[selection]
-        source = self.data.sql_handler.select_source_by_title(title)
+        source = self.data.db.select_source_by_title(title)
         return source
 
-    def _on_show_config_frame(self, event=None):
+    def _on_show_settings_dialog(self, event=None):
         self.settings_dialog = SettingsDialog(self, self.data)
 
+    def _on_show_queue_dialog(self, even=None):
+        self.queue_dialog = QueueDialog(self, self.data)
+
     def _on_import_meta(self, event=None):
-        metas = self.data.sql_handler.metas.select_metas_by_imported(False)
+        unimported_assets = self.data.db.assets.filter_by(imported_raw=False, installed_raw=True).all()
 
-        self.data.write_meta_import_script(metas)
-        self.data.execute_meta_import_script()
+        with MetaDialog(self, self.data) as meta_dialog:
+            if meta_dialog.ShowModal() == wx.ID_YES:
+                self.data.write_meta_import_script(unimported_assets)
+                self.data.execute_meta_import_script()
 
-        for meta in metas:
-            self.data.sql_handler.update_metas_imported_to(meta.asset_id, True)
+        # for asset in unimported_assets:
+        #     self.data.db.assets.update(asset.id, True)
+
+        # todo delete import.dsa
 
     def _on_tree_selection_change(self, event):
         data = self.notebook_panel.tree_panel.tree.GetItemData(event.GetItem())
 
         if data['type'] == 'asset':
-            asset = self.data.sql_handler.assets.select_asset_by_id(data['id'])
-            self.details_panel.update_values_for_asset(asset)
+            self.details_panel.update_values_for_asset(self.data.db.assets[data['id']])
         elif data['type'] == 'folder':
-            folder = self.data.sql_handler.folders.select_folder_by_id(data['id'])
+            folder = self.data.db.folders.filter_by(id=data['id']).first()
             self.details_panel.update_values_for_folder(folder)
 
     def _on_olv_selection_change(self, event=None):
