@@ -1,5 +1,5 @@
 from wxClasses.main._MainFrame import MainFrame
-import wx.lib.mixins.inspection
+import wx.lib.mixins.inspection, wx
 
 
 class ADI(wx.App, wx.lib.mixins.inspection.InspectionMixin):
